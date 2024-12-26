@@ -1,0 +1,14 @@
+identifier: at_start_f405
+name: AT AT-START-F405
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - counter
+  - gpio
+ram: 96
+flash: 256
+vendor: at
