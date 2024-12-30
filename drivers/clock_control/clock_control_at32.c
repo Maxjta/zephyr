@@ -208,9 +208,8 @@ static const struct clock_control_driver_api clock_control_at32_api = {
 int at32_clock_control_init(const struct device *dev)
 {
 	int clk_div = 0;
-//#if defined(AT32_PLL_ENABLED)
 	/* select pll as system clock source */
-	crm_sysclk_switch(CRM_SCLK_HICK);
+  crm_sysclk_switch(CRM_SCLK_HICK);
 	
   /* wait till pll is used as system clock source */
   while(crm_sysclk_switch_status_get() != CRM_SCLK_HICK)
@@ -219,11 +218,10 @@ int at32_clock_control_init(const struct device *dev)
 	
 	/* disable pll */
   crm_clock_source_enable(CRM_CLOCK_SOURCE_PLL, FALSE);
-//#endif
 
-	flash_psr_set(FLASH_WAIT_CYCLE_6);
+  flash_psr_set(FLASH_WAIT_CYCLE_6);
 	
-	crm_clock_source_enable(CRM_CLOCK_SOURCE_HEXT, TRUE);
+  crm_clock_source_enable(CRM_CLOCK_SOURCE_HEXT, TRUE);
 
    /* wait till hext is ready */
   while(crm_hext_stable_wait() == ERROR)
@@ -247,28 +245,28 @@ int at32_clock_control_init(const struct device *dev)
   {
   }
 	
-	/* config ahbclk */
-	clk_div = DT_PROP(DT_NODELABEL(crm), ahb_prescaler);
-	if(clk_div == 1)
-		clk_div = CRM_AHB_DIV_1;
-	else
-		clk_div = (clk_div - 2) + 8;
+  /* config ahbclk */
+  clk_div = DT_PROP(DT_NODELABEL(crm), ahb_prescaler);
+  if(clk_div == 1)
+    clk_div = CRM_AHB_DIV_1;
+  else
+    clk_div = (clk_div - 2) + 8;
   crm_ahb_div_set(clk_div);
 
   /* config apb2clk */
-	clk_div = DT_PROP(DT_NODELABEL(crm), apb2_prescaler);
-	if(clk_div == 1)
-		clk_div = CRM_APB2_DIV_1;
-	else
-		clk_div = (clk_div - 2) + 4;
+  clk_div = DT_PROP(DT_NODELABEL(crm), apb2_prescaler);
+  if(clk_div == 1)
+    clk_div = CRM_APB2_DIV_1;
+  else
+    clk_div = (clk_div - 2) + 4;
   crm_apb2_div_set(clk_div);
 
   /* config apb1clk */
-	clk_div = DT_PROP(DT_NODELABEL(crm), apb1_prescaler);
-	if(clk_div == 1)
-		clk_div = CRM_APB1_DIV_1;
-	else
-		clk_div = (clk_div - 2) + 4;
+  clk_div = DT_PROP(DT_NODELABEL(crm), apb1_prescaler);
+  if(clk_div == 1)
+    clk_div = CRM_APB1_DIV_1;
+  else
+    clk_div = (clk_div - 2) + 4;
   crm_apb1_div_set(clk_div);
 
   /* enable auto step mode */
@@ -287,6 +285,7 @@ int at32_clock_control_init(const struct device *dev)
 
   /* update system_core_clock global variable */
   /* system_core_clock_update(); */
+  return 0;
 	
 }
 

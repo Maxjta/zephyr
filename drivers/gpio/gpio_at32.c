@@ -11,7 +11,7 @@
 #include <zephyr/drivers/clock_control/at32_clock_control.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/gpio/gpio_utils.h>
-//#include <zephyr/drivers/interrupt_controller/exint_at32.h>
+#include <zephyr/drivers/interrupt_controller/intc_at32.h>
 #include <zephyr/drivers/reset.h>
 
 #include <soc.h>
@@ -65,21 +65,21 @@ struct gpio_at32_data {
 };
 
 /**
- * @brief EXTI ISR callback.
+ * @brief EXINT ISR callback.
  *
- * @param line EXTI line (equals to GPIO pin number).
+ * @param line EXINT line (equals to GPIO pin number).
  * @param arg GPIO port instance.
  */
-static void gpio_at32_isr(uint8_t line, void *arg)
+static void gpio_at32_isr(uint32_t line, void *arg)
 {
 	const struct device *dev = arg;
 	struct gpio_at32_data *data = dev->data;
 
-	gpio_fire_callbacks(&data->callbacks, dev, BIT(line));
+	gpio_fire_callbacks(&data->callbacks, dev, line);
 }
 
 /**
- * @brief Configure EXTI source selection register.
+ * @brief Configure EXINT source selection register.
  *
  * @param port GPIO port instance.
  * @param pin GPIO pin number.
@@ -89,35 +89,8 @@ static void gpio_at32_isr(uint8_t line, void *arg)
  */
 static int gpio_at32_configure_extiss(const struct device *port, gpio_pin_t pin)
 {
-#if 0	
 	const struct gpio_at32_config *config = port->config;
-	uint8_t port_index, shift;
-	volatile uint32_t *extiss;
-
-	switch (pin / EXTISS_STEP) {
-	case 0U:
-		extiss = &SCFG_EXINTC1;
-		break;
-	case 1U:
-		extiss = &SCFG_EXINTC2;
-		break;
-	case 2U:
-		extiss = &SCFG_EXINTC3;
-		break;
-	case 3U:
-		extiss = &SCFG_EXINTC4;
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	port_index = (config->reg - (uint32_t)GPIOA) / ((uint32_t)GPIOB - (uint32_t)GPIOA);
-	shift = EXTISS_LINE_SHIFT(pin);
-
-	*extiss &= ~(EXTISS_MSK << shift);
-	*extiss |= port_index << shift;
-#endif
+	at32_exint_set_line_src_port(pin, config->reg);
 	return 0;
 }
 
@@ -149,48 +122,21 @@ static inline int gpio_at32_configure(const struct device *port, gpio_pin_t pin,
 	  } else {
 		  init.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
 	  }
-#if 0
-		ctl |= GPIO_MODE_SET(pin, GPIO_MODE_OUTPUT);
-
-		if ((flags & GPIO_SINGLE_ENDED) != 0U) {
-			if ((flags & GPIO_LINE_OPEN_DRAIN) != 0U) {
-				GPIO_OMODE(config->reg) |= BIT(pin);
-			} else {
-				return -ENOTSUP;
-			}
-		} else {
-			GPIO_OMODE(config->reg) &= ~BIT(pin);
-		}
-
-		if ((flags & GPIO_OUTPUT_INIT_HIGH) != 0U) {
-			GPIO_BOP(config->reg) = BIT(pin);
-		} else if ((flags & GPIO_OUTPUT_INIT_LOW) != 0U) {
-			GPIO_BC(config->reg) = BIT(pin);
-		}
-#endif
 	} else if ((flags & GPIO_INPUT) != 0U) {
-		//ctl |= GPIO_MODE_SET(pin, GPIO_MODE_INPUT);
 		init.gpio_mode = GPIO_MODE_INPUT;
 	} else {
-		//ctl |= GPIO_MODE_SET(pin, GPIO_MODE_ANALOG);
 		init.gpio_mode = GPIO_MODE_ANALOG;
 	}
 
 	if ((flags & GPIO_PULL_UP) != 0U) {
-		//pupd |= GPIO_PUPD_SET(pin, AT32_GPIO_PULL_UP);
 		init.gpio_pull = GPIO_PULL_UP_1;
 	} else if ((flags & GPIO_PULL_DOWN) != 0U) {
 		init.gpio_pull = GPIO_PULL_DOWN_1;
-		//pupd |= GPIO_PUPD_SET(pin, AT32_GPIO_PULL_DOWN);
 	} else {
-		//pupd |= GPIO_PUPD_SET(pin, AT32_GPIO_PULL_NONE);
 		init.gpio_pull = GPIO_PULL_NONE;
 	}
     
 	gpio_init(gpio, &init);
-//	GPIO_PULL(config->reg) = pupd;
-//	GPIO_CFGR(config->reg) = ctl;
-
 	return 0;
 }
 
@@ -198,9 +144,7 @@ static int gpio_at32_port_get_raw(const struct device *port, uint32_t *value)
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
-
 	*value = gpio->idt;
-
 	return 0;
 }
 
@@ -210,20 +154,14 @@ static int gpio_at32_port_set_masked_raw(const struct device *port, gpio_port_pi
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
 	gpio->odt = (gpio->odt & ~mask) | (value & mask);
-
-//	GPIO_OCTL(config->reg) = (GPIO_OCTL(config->reg) & ~mask) | (value & mask);
-
 	return 0;
 }
 
 static int gpio_at32_port_set_bits_raw(const struct device *port, gpio_port_pins_t pins)
 {
 	const struct gpio_at32_config *config = port->config;
-    gpio_type *gpio = (gpio_type *)config->reg;
-	
+  gpio_type *gpio = (gpio_type *)config->reg;
 	gpio->scr = pins;
-//	GPIO_BOP(config->reg) = pins;
-
 	return 0;
 }
 
@@ -231,11 +169,7 @@ static int gpio_at32_port_clear_bits_raw(const struct device *port, gpio_port_pi
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
-	
 	gpio->clr = pins;
-
-//	GPIO_BC(config->reg) = pins;
-
 	return 0;
 }
 
@@ -245,32 +179,23 @@ static int gpio_at32_port_toggle_bits(const struct device *port, gpio_port_pins_
 	gpio_type *gpio = (gpio_type *)config->reg;
 
 #ifdef CONFIG_AT32_HAS_AF_PINMUX
-//	GPIO_TG(config->reg) = pins;
 	gpio->togr = pins;
 #else
-//	GPIO_OCTL(config->reg) ^= pins;
-    gpio->odt ^= pins;
+  gpio->odt ^= pins;
 #endif /* CONFIG_AT32_HAS_AF_PINMUX */
-
 	return 0;
 }
 
 static int gpio_at32_pin_interrupt_configure(const struct device *port, gpio_pin_t pin,
 					     enum gpio_int_mode mode, enum gpio_int_trig trig)
 {
-#if 0
 	if (mode == GPIO_INT_MODE_DISABLED) {
-		exti_at32_disable(pin);
-		(void)exti_at32_configure(pin, NULL, NULL);
-		exti_at32_trigger(pin, EXTI_AT32_TRIG_NONE);
+		at32_exint_intc_disable_line(BIT(pin));
+		at32_exint_intc_select_line_trigger(BIT(pin), AT32_GPIO_IRQ_TRIG_NONE);
+		at32_exint_intc_remove_irq_callback(BIT(pin));
 	} else if (mode == GPIO_INT_MODE_EDGE) {
 		int ret;
-
-		ret = exti_at32_configure(pin, gpio_at32_isr, (void *)port);
-		if (ret < 0) {
-			return ret;
-		}
-
+		at32_exint_intc_set_irq_callback(BIT(pin), gpio_at32_isr, (void *)port);
 		ret = gpio_at32_configure_extiss(port, pin);
 		if (ret < 0) {
 			return ret;
@@ -278,23 +203,21 @@ static int gpio_at32_pin_interrupt_configure(const struct device *port, gpio_pin
 
 		switch (trig) {
 		case GPIO_INT_TRIG_LOW:
-			exti_at32_trigger(pin, EXTI_AT32_TRIG_FALLING);
+			at32_exint_intc_select_line_trigger(BIT(pin), AT32_GPIO_IRQ_TRIG_FALLING);
 			break;
 		case GPIO_INT_TRIG_HIGH:
-			exti_at32_trigger(pin, EXTI_AT32_TRIG_RISING);
+			at32_exint_intc_select_line_trigger(BIT(pin), AT32_GPIO_IRQ_TRIG_RISING);
 			break;
 		case GPIO_INT_TRIG_BOTH:
-			exti_at32_trigger(pin, EXTI_AT32_TRIG_BOTH);
+			at32_exint_intc_select_line_trigger(BIT(pin), AT32_GPIO_IRQ_TRIG_BOTH);
 			break;
 		default:
 			return -ENOTSUP;
 		}
-
-		exti_at32_enable(pin);
+    at32_exint_intc_enable_line(BIT(pin));
 	} else {
 		return -ENOTSUP;
 	}
-#endif
 	return 0;
 }
 
@@ -340,7 +263,6 @@ static int gpio_at32_init(const struct device *port)
 		.reg = DT_INST_REG_ADDR(n),                                                        \
 		.clkid = DT_INST_CLOCKS_CELL(n, id),                                               \
 		.clkid_exti = DT_CLOCKS_CELL(SYSCFG_NODE, id),                                     \
-		.rcu_periph_clock = 0,                                                             \                             
 	};                                                                                         \
                                                                                                    \
 	static struct gpio_at32_data gpio_at32_data##n;                                            \
