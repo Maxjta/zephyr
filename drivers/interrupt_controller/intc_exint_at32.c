@@ -233,17 +233,17 @@ at32_irq_line_t at32_exint_intc_get_pin_irq_line(uint32_t port, gpio_pin_t pin)
 
 void at32_exint_intc_enable_line(at32_irq_line_t line)
 {
-	unsigned int irqnum;
+  unsigned int irqnum;
   uint32_t line_num = exint_line_to_linenum(line);
   
-	__ASSERT_NO_MSG(line_num < NUM_EXTI_LINES);
-	/* Get matching exti irq provided line thanks to irq_table */
-	irqnum = exint_irq_table[line_num];
-	__ASSERT_NO_MSG(irqnum != 0xFF);
+  __ASSERT_NO_MSG(line_num < NUM_EXINT_LINES);
+  /* Get matching exint irq provided line thanks to irq_table */
+  irqnum = exint_irq_table[line_num];
+  __ASSERT_NO_MSG(irqnum != 0xFF);
 
   exint_interrupt_enable(line, TRUE);
-	/* Enable exint irq interrupt */
-	irq_enable(irqnum);
+  /* Enable exint irq interrupt */
+  irq_enable(irqnum);
 }
 
 void at32_exint_intc_disable_line(at32_irq_line_t line)

@@ -65,7 +65,7 @@ enum at32_exint_irq_trigger {
  * @brief Select trigger for interrupt on specified GPIO line
  *
  * @param line	GPIO interrupt line
- * @param trg	Interrupt trigger (see @ref stm32_gpio_irq_trigger)
+ * @param trg	Interrupt trigger
  */
 void at32_exint_intc_select_line_trigger(at32_irq_line_t line, uint32_t trg);
 
@@ -73,7 +73,7 @@ void at32_exint_intc_select_line_trigger(at32_irq_line_t line, uint32_t trg);
  * @brief GPIO interrupt callback function signature
  *
  * @param pin	GPIO pin on which interrupt occurred
- * @param user	@p data provided to @ref stm32_gpio_intc_set_irq_callback
+ * @param user	@p data provided to @ref at32_exint_intc_set_irq_callback
  *
  * @note This callback is invoked in ISR context.
  */
