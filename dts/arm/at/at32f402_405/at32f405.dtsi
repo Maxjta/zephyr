@@ -280,6 +280,65 @@
 			status = "disabled";
 		};
     
+    spi1: spi@40013000 {
+			compatible = "at,at32-spi";
+			reg = <0x40013000 0x400>;
+			interrupts = <35 0>;
+			clocks = <&cctl AT32_CLOCK_SPI1>;
+			resets = <&rctl AT32_RESET_SPI1>;
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+    
+    spi2: spi@40003800 {
+			compatible = "at,at32-spi";
+			reg = <0x40003800 0x400>;
+			interrupts = <36 0>;
+			clocks = <&cctl AT32_CLOCK_SPI2>;
+			resets = <&rctl AT32_RESET_SPI2>;
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+    
+    spi3: spi@40003C00 {
+			compatible = "at,at32-spi";
+			reg = <0x40003C00 0x400>;
+			interrupts = <51 0>;
+			clocks = <&cctl AT32_CLOCK_SPI3>;
+			resets = <&rctl AT32_RESET_SPI3>;
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+    
+    dma1: dma@40026000 {
+			compatible = "at,at32-dma";
+			reg = <0x40026000 0x400>;
+			interrupts = <11 0>, <12 0>, <13 0>, <14 0>,
+				     <15 0>, <16 0>, <17 0>;
+			clocks = <&cctl AT32_CLOCK_DMA1>;
+			resets = <&rctl AT32_RESET_DMA1>;
+			dma-channels = <7>;
+			at,mem2mem;
+			#dma-cells = <4>;
+			status = "disabled";
+		};
+    
+    dma2: dma@40026400 {
+			compatible = "at,at32-dma";
+			reg = <0x40026400 0x400>;
+			interrupts = <56 0>, <57 0>, <58 0>, <59 0>,
+				     <60 0>, <68 0>, <69 0>;
+			clocks = <&cctl AT32_CLOCK_DMA2>;
+			resets = <&rctl AT32_RESET_DMA2>;
+			dma-channels = <7>;
+			at,mem2mem;
+			#dma-cells = <4>;
+			status = "disabled";
+		};
+    
 		timer1: timer@40010000 {
 			compatible = "at,at32-timer";
 			reg = <0x40010000 0x400>;
