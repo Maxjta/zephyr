@@ -128,3 +128,10 @@
 	dma-names = "rx", "tx";
 };
 
+&i2c1 {
+    status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+};
+
