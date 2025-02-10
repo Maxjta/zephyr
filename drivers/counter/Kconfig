@@ -92,6 +92,8 @@ source "drivers/counter/Kconfig.nxp_s32"
 
 source "drivers/counter/Kconfig.gd32"
 
+source "drivers/counter/Kconfig.at32"
+
 source "drivers/counter/Kconfig.dw"
 
 source "drivers/counter/Kconfig.rpi_pico"

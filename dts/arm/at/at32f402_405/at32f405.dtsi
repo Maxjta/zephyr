@@ -383,11 +383,10 @@
 			reg = <0x40010000 0x400>;
 			interrupts = <24 0>, <25 0>, <26 0>, <27 0>;
 			interrupt-names = "brk", "up", "trgcom", "cc";
-			crm-periph-clock = <0x440000>;
-			crm-periph-reset = <0x240000>;
 			clocks = <&cctl AT32_CLOCK_TIMER1>;
 			resets = <&rctl AT32_RESET_TIMER1>;
 			channels = <4>;
+            is-advanced;
 			status = "disabled";
 
 			pwm {
@@ -402,11 +401,11 @@
 			reg = <0x40000000 0x400>;
 			interrupts = <28 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400000>;
-			crm-periph-reset = <0x200000>;
 			clocks = <&cctl AT32_CLOCK_TIMER2>;
 			resets = <&rctl AT32_RESET_TIMER2>;
 			channels = <4>;
+            at,prescaler = <0>;
+            is-32bit;
 			status = "disabled";
 
 			pwm {
@@ -421,8 +420,6 @@
 			reg = <0x40000400 0x400>;
 			interrupts = <29 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400001>;
-			crm-periph-reset = <0x200001>;
 			clocks = <&cctl AT32_CLOCK_TIMER3>;
 			resets = <&rctl AT32_RESET_TIMER3>;
 			channels = <4>;
@@ -440,8 +437,6 @@
 			reg = <0x40000800 0x400>;
 			interrupts = <30 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400002>;
-			crm-periph-reset = <0x200002>;
 			clocks = <&cctl AT32_CLOCK_TIMER4>;
 			resets = <&rctl AT32_RESET_TIMER4>;
 			channels = <4>;
@@ -459,8 +454,6 @@
 			reg = <0x40000C00 0x400>;
 			interrupts = <50 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400003>;
-			crm-periph-reset = <0x200003>;
 			clocks = <&cctl AT32_CLOCK_TIMER5>;
 			resets = <&rctl AT32_RESET_TIMER5>;
 			channels = <4>;
@@ -478,8 +471,6 @@
 			reg = <0x40001000 0x400>;
 			interrupts = <54 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400004>;
-			crm-periph-reset = <0x200004>;
 			clocks = <&cctl AT32_CLOCK_TIMER6>;
 			resets = <&rctl AT32_RESET_TIMER6>;
 			channels = <0>;
@@ -491,11 +482,8 @@
 			reg = <0x40001400 0x400>;
 			interrupts = <55 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400005>;
-			crm-periph-reset = <0x200005>;
 			clocks = <&cctl AT32_CLOCK_TIMER7>;
 			resets = <&rctl AT32_RESET_TIMER7>;
-			is-advanced;
 			channels = <0>;
 			status = "disabled";
 		};
@@ -505,8 +493,6 @@
 			reg = <0x40014000 0x400>;
 			interrupts = <24 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x440010>;
-			crm-periph-reset = <0x240010>;
 			clocks = <&cctl AT32_CLOCK_TIMER9>;
 			resets = <&rctl AT32_RESET_TIMER9>;
 			channels = <2>;
@@ -524,8 +510,6 @@
 			reg = <0x40014400 0x400>;
 			interrupts = <25 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x440011>;
-			crm-periph-reset = <0x240011>;
 			clocks = <&cctl AT32_CLOCK_TIMER10>;
 			resets = <&rctl AT32_RESET_TIMER10>;
 			channels = <1>;
@@ -543,8 +527,6 @@
 			reg = <0x40014800 0x400>;
 			interrupts = <46 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x440012>;
-			crm-periph-reset = <0x240012>;
 			clocks = <&cctl AT32_CLOCK_TIMER11>;
 			resets = <&rctl AT32_RESET_TIMER11>;
 			channels = <1>;
@@ -562,8 +544,6 @@
 			reg = <0x40001C00 0x400>;
 			interrupts = <44 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400007>;
-			crm-periph-reset = <0x200007>;
 			clocks = <&cctl AT32_CLOCK_TIMER13>;
 			resets = <&rctl AT32_RESET_TIMER13>;
 			channels = <1>;
@@ -581,8 +561,6 @@
 			reg = <0x40002000 0x400>;
 			interrupts = <45 0>;
 			interrupt-names = "global";
-			crm-periph-clock = <0x400008>;
-			crm-periph-reset = <0x200008>;
 			clocks = <&cctl AT32_CLOCK_TIMER14>;
 			resets = <&rctl AT32_RESET_TIMER14>;
 			channels = <1>;
