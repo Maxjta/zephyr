@@ -99,3 +99,10 @@
 	apb2-prescaler = <1>;
 	status = "okay";
 };
+
+&usart1 {
+	pinctrl-0 = <&usart1_default>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
