@@ -1417,12 +1417,13 @@ Release Notes:
     - drivers.espi
 
 "Drivers: Ethernet":
-  status: odd fixes
+  status: maintained
+  maintainers:
+    - maass-hamburg
   collaborators:
     - decsny
     - lmajewski
     - pdgendt
-    - maass-hamburg
   files:
     - drivers/ethernet/
     - include/zephyr/dt-bindings/ethernet/
@@ -2764,6 +2765,18 @@ Modem:
   tests:
     - modem
 
+NEORV32 platform:
+  status: maintained
+  maintainers:
+    - henrikbrixandersen
+  files:
+    - boards/others/neorv32/
+    - drivers/*/*neorv32*
+    - dts/bindings/*/*neorv32*
+    - soc/neorv32/
+  labels:
+    - "platform: NEORV32"
+
 OSDP:
   status: maintained
   maintainers:
@@ -3611,9 +3624,10 @@ Silabs Platforms:
     - boards/silabs/
     - dts/arm/silabs/
     - dts/bindings/*/silabs*
-    - drivers/*/*gecko*
-    - drivers/bluetooth/hci/hci_silabs_*
-    - drivers/*/*silabs*
+    - drivers/**/*gecko*
+    - drivers/**/*silabs*
+    - drivers/**/*siwx91x*
+    - tests/boards/silabs/
   labels:
     - "platform: Silabs"
 
