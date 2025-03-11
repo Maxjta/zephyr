@@ -100,6 +100,10 @@
 	status = "okay";
 };
 
+&usbotg_hs {
+    status = "okay";
+};
+
 &usart1 {
 	pinctrl-0 = <&usart1_default>;
 	pinctrl-names = "default";
