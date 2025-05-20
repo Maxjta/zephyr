@@ -146,6 +146,7 @@
     status = "okay";
 };
 
+
 &adc1 {
 	pinctrl-0 = <&adc1_default>;
 	pinctrl-names = "default";
