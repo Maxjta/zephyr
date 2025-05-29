@@ -50,6 +50,7 @@
 		led1 = &yellow_led;
 		led2 = &green_led;
 		sw0 = &user_button;
+		watchdog0 = &wdt;
 	};
 };
 
@@ -139,6 +140,12 @@
 };
 
 &dma1 {
+    status = "okay";
+};
+
+&can1 {
+	pinctrl-0 = <&can1_default>;
+	pinctrl-names = "default";
     status = "okay";
 };
 
