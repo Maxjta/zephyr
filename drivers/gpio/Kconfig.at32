@@ -3,8 +3,6 @@
 # Copyright (c) 2016 Open-RnD Sp. z o.o.
 # SPDX-License-Identifier: Apache-2.0
 
-#DT_COMPAT_AT_AT32_GPIO := at,at32-gpio
-
 config GPIO_AT32
 	bool "GPIO Driver for AT32 family of MCUs"
 	default y

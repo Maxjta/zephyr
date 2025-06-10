@@ -10,6 +10,7 @@
 #include <zephyr/dt-bindings/i2c/i2c.h>
 #include <zephyr/dt-bindings/clock/at32f402_405_clocks.h>
 #include <zephyr/dt-bindings/reset/at32f402_405_reset.h>
+#include <freq.h>
 
 / {
 	cpus {
@@ -24,8 +25,8 @@
 			#size-cells = <1>;
 		};
 	};
-	
-  clocks {
+
+	clocks {
 		clk_hext: clk-hext {
 			#clock-cells = <0>;
 			compatible = "at,at32-hext";
@@ -58,17 +59,24 @@
 			compatible = "at,at32-pll";
 			status = "disabled";
 		};
+
+		sysclk: sysclk {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <DT_FREQ_M(216)>;
+			status = "disabled";
+		};
 	};
 	
 	soc {
 		sram0: memory@20000000 {
-			compatible = "mmio-sram";
+		    compatible = "mmio-sram";
 		};
 
 		crm: reset-clock-controller@40023800 {
 			compatible = "at,at32-crm";
 			reg = <0x40023800 0x400>;
-            #clock-cells = <2>;
+			#clock-cells = <2>;
 			status = "okay";
 			
 			cctl: clock-controller {
@@ -76,6 +84,7 @@
 				#clock-cells = <1>;
 				status = "okay";
 			};
+
 			rctl: reset-controller {
 				compatible = "at,at32-rctl";
 				#reset-cells = <1>;
@@ -94,7 +103,6 @@
 			label = "FLASH_CTRL";
 			reg = <0x40023c00 0x400>;
 			peripheral-id = <6>;
-
 			#address-cells = <1>;
 			#size-cells = <1>;
 
@@ -118,7 +126,7 @@
 			                  "line4",
 			                  "line5-9",
 			                  "line10-15";
-            line-ranges = <0 1>, <1 1>, <2 1>, <3 1>,
+			line-ranges = <0 1>, <1 1>, <2 1>, <3 1>,
 				          <4 1>, <5 5>, <10 6>;
 			status = "okay";
 		};
@@ -185,7 +193,7 @@
 			reg = <0x40011000 0x400>;
 			interrupts = <37 0>;
 			clocks = <&cctl AT32_CLOCK_USART1>;
-            resets = <&rctl AT32_RESET_USART1>;
+			resets = <&rctl AT32_RESET_USART1>;
 			status = "disabled";
 		};
 
@@ -194,7 +202,7 @@
 			reg = <0x40004400 0x400>;
 			interrupts = <38 0>;
 			clocks = <&cctl AT32_CLOCK_USART2>;
-            resets = <&rctl AT32_RESET_USART2>;
+			resets = <&rctl AT32_RESET_USART2>;
 			status = "disabled";
 		};
 
@@ -203,7 +211,7 @@
 			reg = <0x40004800 0x400>;
 			interrupts = <39 0>;
 			clocks = <&cctl AT32_CLOCK_USART3>;
-            resets = <&rctl AT32_RESET_USART3>;
+			resets = <&rctl AT32_RESET_USART3>;
 			status = "disabled";
 		};
 
@@ -212,7 +220,7 @@
 			reg = <0x40004C00 0x400>;
 			interrupts = <52 0>;
 			clocks = <&cctl AT32_CLOCK_USART4>;
-            resets = <&rctl AT32_RESET_USART4>;
+			resets = <&rctl AT32_RESET_USART4>;
 			status = "disabled";
 		};
 
@@ -221,7 +229,7 @@
 			reg = <0x40005000 0x400>;
 			interrupts = <53 0>;
 			clocks = <&cctl AT32_CLOCK_USART5>;
-            resets = <&rctl AT32_RESET_USART5>;
+			resets = <&rctl AT32_RESET_USART5>;
 			status = "disabled";
 		};
 
@@ -230,7 +238,7 @@
 			reg = <0x40011400 0x400>;
 			interrupts = <71 0>;
 			clocks = <&cctl AT32_CLOCK_USART6>;
-            resets = <&rctl AT32_RESET_USART6>;
+			resets = <&rctl AT32_RESET_USART6>;
 			status = "disabled";
 		};
 
@@ -239,7 +247,7 @@
 			reg = <0x40007800 0x400>;
 			interrupts = <82 0>;
 			clocks = <&cctl AT32_CLOCK_UART7>;
-            resets = <&rctl AT32_RESET_UART7>;
+			resets = <&rctl AT32_RESET_UART7>;
 			status = "disabled";
 		};
 
@@ -248,39 +256,39 @@
 			reg = <0x40007C00 0x400>;
 			interrupts = <83 0>;
 			clocks = <&cctl AT32_CLOCK_UART8>;
-            resets = <&rctl AT32_RESET_UART8>;
+			resets = <&rctl AT32_RESET_UART8>;
 			status = "disabled";
 		};
     
-        usbotg_hs: usb@40040000 {
+		usbotg_hs: usb@40040000 {
 			compatible = "at,at32-otghs";
 			reg = <0x40040000 0x40000>;
 			interrupts = <77 0>;
-            num-in-eps = <8>;
-            num-out-eps = <8>;
-            ram-size = <4096>;
-            ghwcfg1 = <0>;
-            ghwcfg2 = <0>;
-            ghwcfg4 = <0>;
-            clocks = <&cctl AT32_CLOCK_USBHS>;
+			num-in-eps = <8>;
+			num-out-eps = <8>;
+			ram-size = <4096>;
+			ghwcfg1 = <0>;
+			ghwcfg2 = <0>;
+			ghwcfg4 = <0>;
+			clocks = <&cctl AT32_CLOCK_USBHS>;
 			status = "disabled";
 		};
     
-        usbotg_fs: usb@50000000 {
+		usbotg_fs: usb@50000000 {
 			compatible = "at,at32-otgfs";
 			reg = <0x50000000 0x40000>;
 			interrupts = <67 0>;
-            num-in-eps = <8>;
-            num-out-eps = <8>;
-            ram-size = <1280>;
-            ghwcfg1 = <0>;
-            ghwcfg2 = <0>;
-            ghwcfg4 = <0>;
-            clocks = <&cctl AT32_CLOCK_USBFS>;
+			num-in-eps = <8>;
+			num-out-eps = <8>;
+			ram-size = <1280>;
+			ghwcfg1 = <0>;
+			ghwcfg2 = <0>;
+			ghwcfg4 = <0>;
+			clocks = <&cctl AT32_CLOCK_USBFS>;
 			status = "disabled";
 		};
     
-        spi1: spi@40013000 {
+		spi1: spi@40013000 {
 			compatible = "at,at32-spi";
 			reg = <0x40013000 0x400>;
 			interrupts = <35 0>;
@@ -291,7 +299,7 @@
 			#size-cells = <0>;
 		};
     
-        spi2: spi@40003800 {
+		spi2: spi@40003800 {
 			compatible = "at,at32-spi";
 			reg = <0x40003800 0x400>;
 			interrupts = <36 0>;
@@ -302,7 +310,7 @@
 			#size-cells = <0>;
 		};
     
-        spi3: spi@40003c00 {
+		spi3: spi@40003c00 {
 			compatible = "at,at32-spi";
 			reg = <0x40003c00 0x400>;
 			interrupts = <51 0>;
@@ -313,7 +321,7 @@
 			#size-cells = <0>;
 		};
     
-        dma1: dma@40026000 {
+		dma1: dma@40026000 {
 			compatible = "at,at32-dma";
 			reg = <0x40026000 0x400>;
 			interrupts = <11 0>, <12 0>, <13 0>, <14 0>,
@@ -326,7 +334,7 @@
 			status = "disabled";
 		};
     
-        dma2: dma@40026400 {
+		dma2: dma@40026400 {
 			compatible = "at,at32-dma";
 			reg = <0x40026400 0x400>;
 			interrupts = <56 0>, <57 0>, <58 0>, <59 0>,
@@ -339,7 +347,7 @@
 			status = "disabled";
 		};
 		
-	    i2c1: i2c@40005400 {
+		i2c1: i2c@40005400 {
 			compatible = "at,at32-i2c";
 			reg = <0x40005400 0x400>;
 			#address-cells = <1>;
@@ -352,7 +360,7 @@
 			status = "disabled";
 		};
     
-        i2c2: i2c@40005800 {
+		i2c2: i2c@40005800 {
 			compatible = "at,at32-i2c";
 			reg = <0x40005800 0x400>;
 			#address-cells = <1>;
@@ -365,7 +373,7 @@
 			status = "disabled";
 		};
     
-        i2c3: i2c@40005c00 {
+		i2c3: i2c@40005c00 {
 			compatible = "at,at32-i2c";
 			reg = <0x40005c00 0x400>;
 			#address-cells = <1>;
@@ -386,7 +394,7 @@
 			clocks = <&cctl AT32_CLOCK_TIMER1>;
 			resets = <&rctl AT32_RESET_TIMER1>;
 			channels = <4>;
-            is-advanced;
+			is-advanced;
 			status = "disabled";
 
 			pwm {
@@ -404,8 +412,8 @@
 			clocks = <&cctl AT32_CLOCK_TIMER2>;
 			resets = <&rctl AT32_RESET_TIMER2>;
 			channels = <4>;
-            at,prescaler = <0>;
-            is-32bit;
+			at,prescaler = <0>;
+			is-32bit;
 			status = "disabled";
 
 			pwm {
