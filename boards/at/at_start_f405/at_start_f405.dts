@@ -22,14 +22,17 @@
 
 	leds: leds {
 		compatible = "gpio-leds";
+
 		red_led: led2 {
 			gpios = <&gpiof 4 GPIO_ACTIVE_HIGH>;
 			label = "User LED2";
 		};
+
 		yellow_led: led3 {
 			gpios = <&gpiof 5 GPIO_ACTIVE_HIGH>;
 			label = "User LED3";
 		};
+
 		green_led: led4 {
 			gpios = <&gpiof 6 GPIO_ACTIVE_HIGH>;
 			label = "User LED4";
@@ -38,6 +41,7 @@
 
 	gpio_keys {
 		compatible = "gpio-keys";
+
 		user_button: button {
 			label = "User";
 			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
@@ -54,32 +58,37 @@
 };
 
 &gpioa {
-    status = "okay";
+	status = "okay";
 };
 
 &gpiob {
-    status = "okay";
+	status = "okay";
 };
 
 &gpioc {
-    status = "okay";
+	status = "okay";
 };
 
 &gpiod {
-    status = "okay";
+	status = "okay";
 };
 
 &gpiof {
-    status = "okay";
+	status = "okay";
 };
 
 &clk_hick {
-    status = "okay";
+	status = "okay";
 };
 
 &clk_hext {
-    clock-frequency = <12000000>;
-    status = "okay";
+	clock-frequency = <12000000>;
+	status = "okay";
+};
+
+&sysclk {
+	clock-frequency = <DT_FREQ_M(216)>;
+	status = "okay";
 };
 
 &pll {
