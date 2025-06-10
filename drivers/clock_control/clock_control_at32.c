@@ -21,7 +21,7 @@
 /** offset (from id cell) */
 #define AT32_CLOCK_ID_OFFSET(id) (((id) >> 6U) & 0xFFU)
 /** configuration bit (from id cell) */
-#define AT32_CLOCK_ID_BIT(id)    ((id) & 0x1FU)
+#define AT32_CLOCK_ID_BIT(id)    ((id)&0x1FU)
 
 #define CPU_FREQ CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC
 
