@@ -21,7 +21,7 @@
 /** offset (from id cell) */
 #define AT32_CLOCK_ID_OFFSET(id) (((id) >> 6U) & 0xFFU)
 /** configuration bit (from id cell) */
-#define AT32_CLOCK_ID_BIT(id)	 ((id)&0x1FU)
+#define AT32_CLOCK_ID_BIT(id)    ((id) & 0x1FU)
 
 #define CPU_FREQ CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC
 
@@ -42,32 +42,27 @@ struct clock_control_at32_config {
 	uint32_t base;
 };
 
-static int clock_control_at32_on(const struct device *dev,
-				 clock_control_subsys_t sys)
+static int clock_control_at32_on(const struct device *dev, clock_control_subsys_t sys)
 {
 	const struct clock_control_at32_config *config = dev->config;
 	uint16_t id = *(uint16_t *)sys;
 
-	sys_set_bit(config->base + AT32_CLOCK_ID_OFFSET(id),
-		    AT32_CLOCK_ID_BIT(id));
+	sys_set_bit(config->base + AT32_CLOCK_ID_OFFSET(id), AT32_CLOCK_ID_BIT(id));
 
 	return 0;
 }
 
-static int clock_control_at32_off(const struct device *dev,
-				  clock_control_subsys_t sys)
+static int clock_control_at32_off(const struct device *dev, clock_control_subsys_t sys)
 {
 	const struct clock_control_at32_config *config = dev->config;
 	uint16_t id = *(uint16_t *)sys;
 
-	sys_clear_bit(config->base + AT32_CLOCK_ID_OFFSET(id),
-		      AT32_CLOCK_ID_BIT(id));
+	sys_clear_bit(config->base + AT32_CLOCK_ID_OFFSET(id), AT32_CLOCK_ID_BIT(id));
 
 	return 0;
 }
 
-static int clock_control_at32_get_rate(const struct device *dev,
-				       clock_control_subsys_t sys,
+static int clock_control_at32_get_rate(const struct device *dev, clock_control_subsys_t sys,
 				       uint32_t *rate)
 {
 	const struct clock_control_at32_config *config = dev->config;
@@ -99,15 +94,13 @@ static int clock_control_at32_get_rate(const struct device *dev,
 	return 0;
 }
 
-static enum clock_control_status
-clock_control_at32_get_status(const struct device *dev,
-			      clock_control_subsys_t sys)
+static enum clock_control_status clock_control_at32_get_status(const struct device *dev,
+							       clock_control_subsys_t sys)
 {
 	const struct clock_control_at32_config *config = dev->config;
 	uint16_t id = *(uint16_t *)sys;
 
-	if (sys_test_bit(config->base + AT32_CLOCK_ID_OFFSET(id),
-			 AT32_CLOCK_ID_BIT(id)) != 0) {
+	if (sys_test_bit(config->base + AT32_CLOCK_ID_OFFSET(id), AT32_CLOCK_ID_BIT(id)) != 0) {
 		return CLOCK_CONTROL_STATUS_ON;
 	}
 
@@ -137,60 +130,52 @@ int at32_clock_control_init(const struct device *dev)
 {
 	int clk_div = 0;
 	/* set hick as system clock */
-    crm_sysclk_switch(CRM_SCLK_HICK);
+	crm_sysclk_switch(CRM_SCLK_HICK);
 
-    /* wait till pll is used as system clock source */
-    while (crm_sysclk_switch_status_get() != CRM_SCLK_HICK) {
-    }
+	/* wait till pll is used as system clock source */
+	while (crm_sysclk_switch_status_get() != CRM_SCLK_HICK) {
+	}
 
 	crm_periph_clock_enable(CRM_PWC_PERIPH_CLOCK, TRUE);
 #if defined(PWC_LDO_OUTPUT)
-    pwc_ldo_output_voltage_set(PWC_LDO_OUTPUT_MAX);
+	pwc_ldo_output_voltage_set(PWC_LDO_OUTPUT_MAX);
 #endif
 	/* disable pll */
-    crm_clock_source_enable(CRM_CLOCK_SOURCE_PLL, FALSE);
+	crm_clock_source_enable(CRM_CLOCK_SOURCE_PLL, FALSE);
 #if defined(FLASH_WAIT_CYCLE)
-    if (CPU_FREQ > 192000000) {
-	    flash_psr_set(FLASH_WAIT_CYCLE_6);	
-	}
-	else if (CPU_FREQ > 160000000) {
-        flash_psr_set(FLASH_WAIT_CYCLE_5);	
-	}
-	else if (CPU_FREQ > 128000000) {
-        flash_psr_set(FLASH_WAIT_CYCLE_4);	
-	}
-	else if (CPU_FREQ > 96000000) {
-        flash_psr_set(FLASH_WAIT_CYCLE_3);	
-	}
-	else if (CPU_FREQ > 64000000) {
-        flash_psr_set(FLASH_WAIT_CYCLE_2);	
-	}
-	else {
-        flash_psr_set(FLASH_WAIT_CYCLE_1);	
+	if (CPU_FREQ > 192000000) {
+		flash_psr_set(FLASH_WAIT_CYCLE_6);
+	} else if (CPU_FREQ > 160000000) {
+		flash_psr_set(FLASH_WAIT_CYCLE_5);
+	} else if (CPU_FREQ > 128000000) {
+		flash_psr_set(FLASH_WAIT_CYCLE_4);
+	} else if (CPU_FREQ > 96000000) {
+		flash_psr_set(FLASH_WAIT_CYCLE_3);
+	} else if (CPU_FREQ > 64000000) {
+		flash_psr_set(FLASH_WAIT_CYCLE_2);
+	} else {
+		flash_psr_set(FLASH_WAIT_CYCLE_1);
 	}
 #endif
-    if (IS_ENABLED(AT32_HEXT_ENABLED)) {
-        crm_clock_source_enable(CRM_CLOCK_SOURCE_HEXT, TRUE);
+	if (IS_ENABLED(AT32_HEXT_ENABLED)) {
+		crm_clock_source_enable(CRM_CLOCK_SOURCE_HEXT, TRUE);
 
-        /* wait till hext is ready */
-        while(crm_hext_stable_wait() == ERROR){
-        }
-    }
-    if (IS_ENABLED(AT32_SYSCLK_SRC_PLL)) {
+		/* wait till hext is ready */
+		while (crm_hext_stable_wait() == ERROR) {
+		}
+	}
+	if (IS_ENABLED(AT32_SYSCLK_SRC_PLL)) {
 		/* config pll clock resource */
 		if (IS_ENABLED(AT32_PLL_SRC_HEXT)) {
-			crm_pll_config(CRM_PLL_SOURCE_HEXT, 
-				DT_PROP(DT_NODELABEL(pll), mul_ns), 
-				DT_PROP(DT_NODELABEL(pll), div_ms), 
-				DT_PROP(DT_NODELABEL(pll), div_fp));
+			crm_pll_config(CRM_PLL_SOURCE_HEXT, DT_PROP(DT_NODELABEL(pll), mul_ns),
+				       DT_PROP(DT_NODELABEL(pll), div_ms),
+				       DT_PROP(DT_NODELABEL(pll), div_fp));
+		} else if (IS_ENABLED(AT32_PLL_SRC_HICK)) {
+			crm_pll_config(CRM_PLL_SOURCE_HICK, DT_PROP(DT_NODELABEL(pll), mul_ns),
+				       DT_PROP(DT_NODELABEL(pll), div_ms),
+				       DT_PROP(DT_NODELABEL(pll), div_fp));
 		}
-		else if (IS_ENABLED(AT32_PLL_SRC_HICK)) {
-			crm_pll_config(CRM_PLL_SOURCE_HICK, 
-				DT_PROP(DT_NODELABEL(pll), mul_ns), 
-				DT_PROP(DT_NODELABEL(pll), div_ms), 
-				DT_PROP(DT_NODELABEL(pll), div_fp));
-		}
-#if defined(CRM_PLL_FU)	
+#if defined(CRM_PLL_FU)
 		crm_pllu_div_set(DT_PROP(DT_NODELABEL(pll), div_fu));
 		crm_pllu_output_set(TRUE);
 #endif
@@ -200,64 +185,65 @@ int at32_clock_control_init(const struct device *dev)
 		/* wait till pll is ready */
 		while (crm_flag_get(CRM_PLL_STABLE_FLAG) != SET) {
 		}
-    }
-	
-    /* config ahbclk */
-    clk_div = DT_PROP(DT_NODELABEL(crm), ahb_prescaler);
-    if (clk_div == 1)
-      clk_div = CRM_AHB_DIV_1;
-    else
-      clk_div = (clk_div - 2) + 8;
-    crm_ahb_div_set(clk_div);
+	}
 
-    /* config apb2clk */
-    clk_div = DT_PROP(DT_NODELABEL(crm), apb2_prescaler);
-    if (clk_div == 1)
-      clk_div = CRM_APB2_DIV_1;
-    else
-      clk_div = (clk_div - 2) + 4;
-    crm_apb2_div_set(clk_div);
+	/* config ahbclk */
+	clk_div = DT_PROP(DT_NODELABEL(crm), ahb_prescaler);
+	if (clk_div == 1) {
+		clk_div = CRM_AHB_DIV_1;
+	} else {
+		clk_div = (clk_div - 2) + 8;
+	}
+	crm_ahb_div_set(clk_div);
 
-    /* config apb1clk */
-    clk_div = DT_PROP(DT_NODELABEL(crm), apb1_prescaler);
-    if (clk_div == 1)
-      clk_div = CRM_APB1_DIV_1;
-    else
-      clk_div = (clk_div - 2) + 4;
-	  
-    crm_apb1_div_set(clk_div);
+	/* config apb2clk */
+	clk_div = DT_PROP(DT_NODELABEL(crm), apb2_prescaler);
+	if (clk_div == 1) {
+		clk_div = CRM_APB2_DIV_1;
+	} else {
+		clk_div = (clk_div - 2) + 4;
+	}
+	crm_apb2_div_set(clk_div);
 
-    /* enable auto step mode */
-    crm_auto_step_mode_enable(TRUE);
+	/* config apb1clk */
+	clk_div = DT_PROP(DT_NODELABEL(crm), apb1_prescaler);
+	if (clk_div == 1) {
+		clk_div = CRM_APB1_DIV_1;
+	} else {
+		clk_div = (clk_div - 2) + 4;
+	}
 
-    if (IS_ENABLED(AT32_SYSCLK_SRC_PLL)) {
+	crm_apb1_div_set(clk_div);
+
+	/* enable auto step mode */
+	crm_auto_step_mode_enable(TRUE);
+
+	if (IS_ENABLED(AT32_SYSCLK_SRC_PLL)) {
 		/* select pll as system clock source */
 		crm_sysclk_switch(CRM_SCLK_PLL);
 
 		/* wait till pll is used as system clock source */
 		while (crm_sysclk_switch_status_get() != CRM_SCLK_PLL) {
 		}
-    }
-	else if (IS_ENABLED(AT32_SYSCLK_SRC_HEXT)) {
+	} else if (IS_ENABLED(AT32_SYSCLK_SRC_HEXT)) {
 		/* select hext as system clock source */
 		crm_sysclk_switch(CRM_SCLK_HEXT);
 
 		/* wait till hext is used as system clock source */
 		while (crm_sysclk_switch_status_get() != CRM_SCLK_HEXT) {
 		}
-    }
-	else {
+	} else {
 		/* select hick as system clock source */
 		crm_sysclk_switch(CRM_SCLK_HICK);
 
 		/* wait till hick is used as system clock source */
 		while (crm_sysclk_switch_status_get() != CRM_SCLK_HICK) {
 		}
-    }
+	}
 
-    /* disable auto step mode */
-    crm_auto_step_mode_enable(FALSE);
-    return 0;
+	/* disable auto step mode */
+	crm_auto_step_mode_enable(FALSE);
+	return 0;
 }
 
 static const struct clock_control_at32_config config = {
@@ -265,6 +251,4 @@ static const struct clock_control_at32_config config = {
 };
 
 DEVICE_DT_INST_DEFINE(0, at32_clock_control_init, NULL, NULL, &config, PRE_KERNEL_1,
-		      CONFIG_CLOCK_CONTROL_INIT_PRIORITY,
-		      &clock_control_at32_api);
-
+		      CONFIG_CLOCK_CONTROL_INIT_PRIORITY, &clock_control_at32_api);
