@@ -48,9 +48,9 @@ void at32_exint_intc_disable_line(at32_irq_line_t line);
  */
 enum at32_exint_irq_trigger {
 	/* No trigger */
-	AT32_GPIO_IRQ_TRIG_NONE  = 0x0,
+	AT32_GPIO_IRQ_TRIG_NONE = 0x0,
 	/* Trigger on rising edge */
-	AT32_GPIO_IRQ_TRIG_RISING  = 0x1,
+	AT32_GPIO_IRQ_TRIG_RISING = 0x1,
 	/* Trigger on falling edge */
 	AT32_GPIO_IRQ_TRIG_FALLING = 0x2,
 	/* Trigger on both rising and falling edge */
@@ -87,8 +87,7 @@ typedef void (*at32_exint_irq_cb_t)(uint32_t pin, void *user);
  * @param data	Custom data for usage by the callback
  * @returns 0 on success, -EBUSY if a callback is already set for @p line
  */
-int at32_exint_intc_set_irq_callback(at32_irq_line_t line,
-					at32_exint_irq_cb_t cb, void *data);
+int at32_exint_intc_set_irq_callback(at32_irq_line_t line, at32_exint_irq_cb_t cb, void *data);
 
 /**
  * @brief Removes the interrupt callback of specified EXINT line
@@ -98,7 +97,6 @@ int at32_exint_intc_set_irq_callback(at32_irq_line_t line,
 void at32_exint_intc_remove_irq_callback(at32_irq_line_t line);
 
 /** Hardware-specific API extensions */
-
 
 /**
  * @brief Set which GPIO port triggers events on specified EXTI line.

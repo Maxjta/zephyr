@@ -9,7 +9,7 @@
 #include <zephyr/sys/util_macro.h>
 
 /* CRM */
-#define CRM_CFG_OFFSET	  0x08U
+#define CRM_CFG_OFFSET    0x08U
 #define CRM_AHB1EN_OFFSET 0x30U
 #define CRM_AHB2EN_OFFSET 0x34U
 #define CRM_AHB3EN_OFFSET 0x38U
