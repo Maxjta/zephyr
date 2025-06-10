@@ -21,9 +21,9 @@
 #define SYSCFG_NODE DT_NODELABEL(syscfg)
 
 /** EXINT mask */
-#define EXINT_MSK	       0xFU
+#define EXINT_MSK             0xFU
 /** EXINT line step size */
-#define EXINT_STEP	       4U
+#define EXINT_STEP            4U
 /** EXINT line shift */
 #define EXINT_LINE_SHIFT(pin) (EXINT_STEP * ((pin) % EXINT_STEP))
 
@@ -84,22 +84,22 @@ static inline int gpio_at32_configure(const struct device *port, gpio_pin_t pin,
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
 	gpio_init_type init_config;
-	
+
 	gpio_default_para_init(&init_config);
-	
+
 	init_config.gpio_pins = GPIO_PIN_OFFSET(pin);
 
 	if ((flags & GPIO_OUTPUT) != 0U) {
 		init_config.gpio_mode = GPIO_MODE_OUTPUT;
-	  if ((flags & GPIO_SINGLE_ENDED) != 0U) {
-		  if ((flags & GPIO_LINE_OPEN_DRAIN) != 0U) {
-			init_config.gpio_out_type = GPIO_OUTPUT_OPEN_DRAIN;
+		if ((flags & GPIO_SINGLE_ENDED) != 0U) {
+			if ((flags & GPIO_LINE_OPEN_DRAIN) != 0U) {
+				init_config.gpio_out_type = GPIO_OUTPUT_OPEN_DRAIN;
 			} else {
 				return -ENOTSUP;
-	    }
-	  } else {
-		init_config.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
-	  }
+			}
+		} else {
+			init_config.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+		}
 	} else if ((flags & GPIO_INPUT) != 0U) {
 		init_config.gpio_mode = GPIO_MODE_INPUT;
 	} else {
@@ -113,7 +113,7 @@ static inline int gpio_at32_configure(const struct device *port, gpio_pin_t pin,
 	} else {
 		init_config.gpio_pull = AT32_PULL_NONE;
 	}
-    
+
 	gpio_init(gpio, &init_config);
 	return 0;
 }
@@ -155,7 +155,7 @@ static int gpio_at32_port_toggle_bits(const struct device *port, gpio_port_pins_
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
-    gpio->odt ^= pins;
+	gpio->odt ^= pins;
 	return 0;
 }
 
@@ -187,7 +187,7 @@ static int gpio_at32_pin_interrupt_configure(const struct device *port, gpio_pin
 		default:
 			return -ENOTSUP;
 		}
-    at32_exint_intc_enable_line(BIT(pin));
+		at32_exint_intc_enable_line(BIT(pin));
 	} else {
 		return -ENOTSUP;
 	}
@@ -215,7 +215,7 @@ static DEVICE_API(gpio, gpio_at32_api) = {
 static int gpio_at32_init(const struct device *port)
 {
 	const struct gpio_at32_config *config = port->config;
-	
+
 	(void)clock_control_on(AT32_CLOCK_CONTROLLER, (clock_control_subsys_t *)&config->clkid);
 
 	(void)clock_control_on(AT32_CLOCK_CONTROLLER,
@@ -231,7 +231,7 @@ static int gpio_at32_init(const struct device *port)
 			},                                                                         \
 		.reg = DT_INST_REG_ADDR(n),                                                        \
 		.clkid = DT_INST_CLOCKS_CELL(n, id),                                               \
-		.clkid_exint = DT_CLOCKS_CELL(SYSCFG_NODE, id),                                     \
+		.clkid_exint = DT_CLOCKS_CELL(SYSCFG_NODE, id),                                    \
 	};                                                                                         \
                                                                                                    \
 	static struct gpio_at32_data gpio_at32_data##n;                                            \
