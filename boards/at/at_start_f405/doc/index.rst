@@ -22,6 +22,7 @@ Hardware
 - 1x OTGHS on chip phy, Support usb2.0 high speed
 - 1x OTGFS Support usb2.0 Full speed
 - Up to 14 times
+- 2 x 7-channel DMA controllers
 
 Supported Features
 ==================
