@@ -49,6 +49,7 @@ struct at32_exint_data {
 static scfg_port_source_type get_source_port(uint32_t port)
 {
 	uint32_t port_index;
+
 	port_index = (port - (uint32_t)GPIOA) / ((uint32_t)GPIOB - (uint32_t)GPIOA);
 	return (scfg_port_source_type)port_index;
 }
@@ -56,6 +57,7 @@ static scfg_port_source_type get_source_port(uint32_t port)
 static uint32_t scfg_get_exint_port(scfg_pins_source_type pin_source)
 {
 	uint32_t tmp = 0x00;
+
 	tmp = ((uint32_t)0x0F) << (0x04 * (pin_source & (uint8_t)0x03));
 
 	switch (pin_source >> 0x02) {
@@ -296,6 +298,7 @@ void at32_exint_set_line_src_port(gpio_pin_t pin, uint32_t port)
 uint32_t at32_exint_get_line_src_port(gpio_pin_t pin)
 {
 	uint32_t port;
+
 	port = scfg_get_exint_port((scfg_pins_source_type)pin);
 	return port;
 }

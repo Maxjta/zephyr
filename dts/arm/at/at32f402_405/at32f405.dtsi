@@ -67,7 +67,7 @@
 			status = "disabled";
 		};
 	};
-	
+
 	soc {
 		sram0: memory@20000000 {
 		    compatible = "mmio-sram";
@@ -78,7 +78,7 @@
 			reg = <0x40023800 0x400>;
 			#clock-cells = <2>;
 			status = "okay";
-			
+
 			cctl: clock-controller {
 				compatible = "at,at32-cctl";
 				#clock-cells = <1>;
@@ -119,15 +119,10 @@
 			num-lines = <23>;
 			interrupts = <6 0>, <7 0>, <8 0>, <9 0>, <10 0>, <23 0>,
 				     <40 0>;
-			interrupt-names = "line0",
-			                  "line1",
-			                  "line2",
-			                  "line3",
-			                  "line4",
-			                  "line5-9",
-			                  "line10-15";
+			interrupt-names = "line0", "line1", "line2", "line3",
+					  "line4", "line5-9", "line10-15";
 			line-ranges = <0 1>, <1 1>, <2 1>, <3 1>,
-				          <4 1>, <5 5>, <10 6>;
+				      <4 1>, <5 5>, <10 6>;
 			status = "okay";
 		};
 
