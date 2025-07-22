@@ -104,7 +104,7 @@ config USE_AT32_XMC
 	bool
 	help
 	  Enable AT32 External Memory Controller (EXMC) HAL module driver
-	  
+
 config USE_AT32_MISC
 	bool
 	help
@@ -152,7 +152,7 @@ config USE_AT32_ERTC
 	bool
 	help
 	  Enable AT32 Enhanced Real-Time Clock (RTC) HAL module driver
-	  
+
 config USE_AT32_RTC
 	bool
 	help
@@ -195,7 +195,6 @@ config USE_AT32_USB
 	help
 	  Enable AT32 Universal Serial Bus interface (USB/OTG)
 	  HAL module driver
-
 
 config USE_AT32_WWDT
 	bool

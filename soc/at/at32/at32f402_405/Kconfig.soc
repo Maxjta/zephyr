@@ -13,7 +13,7 @@ config SOC_SERIES
 config SOC_AT32F405
 	bool
 	select SOC_SERIES_AT32F402_405
-	
+
 config SOC_AT32F402
 	bool
 	select SOC_SERIES_AT32F402_405
