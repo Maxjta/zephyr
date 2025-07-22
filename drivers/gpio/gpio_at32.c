@@ -75,6 +75,7 @@ static void gpio_at32_isr(uint32_t line, void *arg)
 static int gpio_at32_configure_extiss(const struct device *port, gpio_pin_t pin)
 {
 	const struct gpio_at32_config *config = port->config;
+
 	at32_exint_set_line_src_port(pin, config->reg);
 	return 0;
 }
@@ -131,6 +132,7 @@ static int gpio_at32_port_set_masked_raw(const struct device *port, gpio_port_pi
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
+
 	gpio->odt = (gpio->odt & ~mask) | (value & mask);
 	return 0;
 }
@@ -139,6 +141,7 @@ static int gpio_at32_port_set_bits_raw(const struct device *port, gpio_port_pins
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
+
 	gpio->scr = pins;
 	return 0;
 }
@@ -147,6 +150,7 @@ static int gpio_at32_port_clear_bits_raw(const struct device *port, gpio_port_pi
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
+
 	gpio->clr = pins;
 	return 0;
 }
@@ -155,6 +159,7 @@ static int gpio_at32_port_toggle_bits(const struct device *port, gpio_port_pins_
 {
 	const struct gpio_at32_config *config = port->config;
 	gpio_type *gpio = (gpio_type *)config->reg;
+
 	gpio->odt ^= pins;
 	return 0;
 }
@@ -168,6 +173,7 @@ static int gpio_at32_pin_interrupt_configure(const struct device *port, gpio_pin
 		at32_exint_intc_remove_irq_callback(BIT(pin));
 	} else if (mode == GPIO_INT_MODE_EDGE) {
 		int ret;
+
 		at32_exint_intc_set_irq_callback(BIT(pin), gpio_at32_isr, (void *)port);
 		ret = gpio_at32_configure_extiss(port, pin);
 		if (ret < 0) {
