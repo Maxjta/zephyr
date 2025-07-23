@@ -9,6 +9,6 @@ config SYS_CLOCK_HW_CYCLES_PER_SEC
 	default $(dt_node_int_prop_int,/clocks/sysclk,clock-frequency)
 
 config CLOCK_CONTROL
-    default y
+	default y
 
 endif # SOC_FAMILY_AT32

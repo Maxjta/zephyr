@@ -40,11 +40,14 @@ typedef uint32_t pinctrl_soc_pin_t;
  * @param prop Property name.
  * @param idx Property entry index.
  */
-#define Z_PINCTRL_STATE_PIN_INIT(node_id, prop, idx)                                               \
-	(DT_PROP_BY_IDX(node_id, prop, idx) |                                                      \
-	 ((AT32_PULL_UP * DT_PROP(node_id, bias_pull_up)) << AT32_PUPD_POS) |                  \
-	 ((AT32_PULL_DOWN * DT_PROP(node_id, bias_pull_down)) << AT32_PUPD_POS) |              \
-	 ((AT32_OUTPUT_OPEN_DRAIN * DT_PROP(node_id, drive_open_drain)) << AT32_OMODE_POS) |                \
+#define Z_PINCTRL_STATE_PIN_INIT(node_id, prop, idx)                   \
+	(DT_PROP_BY_IDX(node_id, prop, idx) |                              \
+	 ((AT32_PULL_UP * DT_PROP(node_id, bias_pull_up))                  \
+	  << AT32_PUPD_POS) |                                              \
+	 ((AT32_PULL_DOWN * DT_PROP(node_id, bias_pull_down))              \
+	  << AT32_PUPD_POS) |                                              \
+	 ((AT32_OUTPUT_OPEN_DRAIN * DT_PROP(node_id, drive_open_drain))    \
+	  << AT32_OMODE_POS) |                                             \
 	 (DT_ENUM_IDX(node_id, slew_rate) << AT32_DRIVE_POS)),
 
 /**
