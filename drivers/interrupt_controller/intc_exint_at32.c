@@ -298,10 +298,7 @@ void at32_exint_set_line_src_port(gpio_pin_t pin, uint32_t port)
 uint32_t at32_exint_get_line_src_port(gpio_pin_t pin)
 {
 	uint32_t port;
-<<<<<<< HEAD
 
-=======
->>>>>>> ef1c930ee82 (driver: interrupt controller: update interrupt controller driver file)
 	port = scfg_get_exint_port((scfg_pins_source_type)pin);
 	return port;
 }
