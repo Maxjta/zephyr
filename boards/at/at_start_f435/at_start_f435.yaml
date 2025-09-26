@@ -1,5 +1,5 @@
-identifier: at_start_f437
-name: AT AT-START-F437
+identifier: at_start_f435
+name: AT AT-START-F435
 type: mcu
 arch: arm
 toolchain:
