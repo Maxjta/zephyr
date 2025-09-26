@@ -176,6 +176,16 @@ int at32_clock_control_init(const struct device *dev)
         flash_psr_set(FLASH_WAIT_CYCLE_1);	
 	}
 #endif
+
+#if defined(FLASH_FDIV)
+	if(CPU_FREQ > 200000000) {
+		flash_clock_divider_set(FLASH_CLOCK_DIV_3);
+	}
+	else {
+		flash_clock_divider_set(FLASH_CLOCK_DIV_2);
+	}
+#endif
+
     if (IS_ENABLED(AT32_HEXT_ENABLED)){
         crm_clock_source_enable(CRM_CLOCK_SOURCE_HEXT, TRUE);
 

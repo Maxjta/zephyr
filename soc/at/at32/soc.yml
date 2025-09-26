@@ -8,3 +8,7 @@ family:
   - name: at32f423
     socs:
     - name: at32f423
+  - name: at32f435_437
+    socs:
+    - name: at32f435
+    - name: at32f437
