@@ -125,14 +125,14 @@
 };
 
 &i2c1 {
-    status = "okay";
+	status = "okay";
 	clock-frequency = <I2C_BITRATE_STANDARD>;
 	pinctrl-0 = <&i2c1_default>;
 	pinctrl-names = "default";
 };
 
 &timer2 {
-    status = "okay";
+	status = "okay";
 	at,prescaler = <9999>;
 	
 	pwm1: pwm {
@@ -143,9 +143,8 @@
 };
 
 &dma1 {
-    status = "okay";
+	status = "okay";
 };
-
 
 &adc1 {
 	pinctrl-0 = <&adc1_default>;

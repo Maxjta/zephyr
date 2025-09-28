@@ -649,8 +649,8 @@
 			interrupts = <18 0>;
 			status = "disabled";
 			#io-channel-cells = <1>;
-			resolutions = <12 10>;
-			sampling-times = <7 13 25 48 93 248 641>;
+			resolutions = <12 10 8 6>;
+			sampling-times = <3 7 13 25 48 93 248 641>;
 			at,adc-clock-source = "SYNC";
 			at,adc-sequencer = "FULLY_CONFIGURABLE";
 		};
@@ -662,8 +662,8 @@
 			interrupts = <18 0>;
 			status = "disabled";
 			#io-channel-cells = <1>;
-			resolutions = <12 10>;
-			sampling-times = <7 13 25 48 93 248 641>;
+			resolutions = <12 10 8 6>;
+			sampling-times = <3 7 13 25 48 93 248 641>;
 			at,adc-clock-source = "SYNC";
 			at,adc-sequencer = "FULLY_CONFIGURABLE";
 		};
@@ -675,8 +675,8 @@
 			interrupts = <18 0>;
 			status = "disabled";
 			#io-channel-cells = <1>;
-			resolutions = <12 10>;
-			sampling-times = <7 13 25 48 93 248 641>;
+			resolutions = <12 10 8 6>;
+			sampling-times = <3 7 13 25 48 93 248 641>;
 			at,adc-clock-source = "SYNC";
 			at,adc-sequencer = "FULLY_CONFIGURABLE";
 		};
