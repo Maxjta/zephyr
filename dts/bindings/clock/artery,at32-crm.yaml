@@ -24,7 +24,7 @@ description: |
            apb2-presacler = <1>;
   }
 
-compatible: "at,at32-crm"
+compatible: "artery,at32-crm"
 
 include: [clock-controller.yaml, base.yaml]
 

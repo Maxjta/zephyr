@@ -75,9 +75,9 @@ description: |
              pinctrl-names = "default", "sleep";
        };
 
-compatible: "at,at32-pinctrl-mux"
+compatible: "artery,at32-pinctrl-mux"
 
-include: at,at32-pinctrl-common.yaml
+include: artery,at32-pinctrl-common.yaml
 
 child-binding:
   description: |

@@ -3,7 +3,7 @@
 
 description: AT32 System Configuration Registers
 
-compatible: "at,at32-syscfg"
+compatible: "artery,at32-syscfg"
 
 include: base.yaml
 

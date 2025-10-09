@@ -7,7 +7,7 @@ description: |
   Takes one of clk_hext or clk_hick as input clock.
 
 
-compatible: "at,at32-pll"
+compatible: "artery,at32-pll"
 
 include: [clock-controller.yaml, base.yaml]
 

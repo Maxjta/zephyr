@@ -20,7 +20,7 @@ description: |
   include/zephyr/dts-bindings/reset/at32{xxx}.h header files, where {xxx}
   corresponds to the SoC series, e.g. f4xx.
 
-compatible: "at,at32-rctl"
+compatible: "artery,at32-rctl"
 
 include: [reset-controller.yaml, base.yaml]
 

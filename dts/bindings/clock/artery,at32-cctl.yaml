@@ -20,7 +20,7 @@ description: |
   include/zephyr/dts-bindings/clock/at32{xxx}_clocks.h header files, where {xxx}
   corresponds to the SoC series, e.g. f4xx.
 
-compatible: "at,at32-cctl"
+compatible: "artery,at32-cctl"
 
 include: [clock-controller.yaml, base.yaml]
 

@@ -3,7 +3,7 @@
 
 description: AT32 USART
 
-compatible: "at,at32-usart"
+compatible: "artery,at32-usart"
 
 include: [uart-controller.yaml, reset-device.yaml, pinctrl-device.yaml]
 

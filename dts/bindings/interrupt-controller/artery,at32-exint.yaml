@@ -1,6 +1,6 @@
 description: AT32 External Interrupt Controller
 
-compatible: "at,at32-exint"
+compatible: "artery,at32-exint"
 
 include: [base.yaml, interrupt-controller.yaml]
 

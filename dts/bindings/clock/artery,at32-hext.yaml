@@ -3,7 +3,7 @@
 
 description: AT32 HEXT Clock
 
-compatible: "at,at32-hext"
+compatible: "artery,at32-hext"
 
 include: [fixed-clock.yaml]
 

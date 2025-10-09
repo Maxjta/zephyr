@@ -3,7 +3,7 @@
 
 description: AT32 GPIO node
 
-compatible: "at,at32-gpio"
+compatible: "artery,at32-gpio"
 
 include: [gpio-controller.yaml, reset-device.yaml, base.yaml]
 

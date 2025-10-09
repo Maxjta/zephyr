@@ -5,7 +5,7 @@
  */
 
 #include <mem.h>
-#include <at/at32f402_405/at32f405.dtsi>
+#include <artery/at32f402_405/at32f405.dtsi>
 
 / {
 	soc {
