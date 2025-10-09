@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT at_at32_cctl
+#define DT_DRV_COMPAT artery_at32_cctl
 
 #include <stdint.h>
 
@@ -14,6 +14,7 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/at32_clock_control.h>
 
+#include <at32_regs.h>
 #include <at32_crm.h>
 #include <at32_flash.h>
 #include <at32_pwc.h>
