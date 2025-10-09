@@ -5,13 +5,13 @@
  */
 
 /dts-v1/;
-#include <at/at32f402_405/at32f405rct7.dtsi>
+#include <artery/at32f402_405/at32f405rct7.dtsi>
 #include "at_start_f405-pinctrl.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 
 / {
 	model = "AT AT-START-F405 board";
-	compatible = "at,at_start_f405";
+	compatible = "artery,at_start_f405";
 
 	chosen {
 		zephyr,console = &usart1;
