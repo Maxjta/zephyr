@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT at_at32_gpio
+#define DT_DRV_COMPAT artery_at32_gpio
 
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/at32_clock_control.h>
