@@ -4,7 +4,7 @@
 config PINCTRL_AT32_MUX
 	bool "AT32 MUX pin controller driver"
 	default y
-	depends on DT_HAS_AT_AT32_PINCTRL_MUX_ENABLED
+	depends on DT_HAS_ARTERY_AT32_PINCTRL_MUX_ENABLED
 	help
 	  AT32 MUX pin controller driver. This driver is used by series using the
 	  AF pin multiplexing model.
