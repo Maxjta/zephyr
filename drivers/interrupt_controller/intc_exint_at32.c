@@ -10,7 +10,7 @@
  * @brief Driver for External interrupt/event controller in AT32 MCUs
  */
 
-#define EXINT_NODE DT_INST(0, at_at32_exint)
+#define EXINT_NODE DT_INST(0, artery_at32_exint)
 
 #include <zephyr/device.h>
 #include <soc.h>
