@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT at_at32_rctl
+#define DT_DRV_COMPAT artery_at32_rctl
 
 #include <zephyr/arch/cpu.h>
 #include <zephyr/device.h>

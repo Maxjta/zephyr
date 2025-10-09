@@ -4,4 +4,4 @@
 config RESET_AT32
 	bool "AT32 Reset Controller Driver"
 	default y
-	depends on DT_HAS_AT_AT32_RCTL_ENABLED
+	depends on DT_HAS_ARTERY_AT32_RCTL_ENABLED
