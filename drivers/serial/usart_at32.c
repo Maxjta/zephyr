@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT at_at32_usart
+#define DT_DRV_COMPAT artery_at32_usart
 
 #include <errno.h>
 
