@@ -12,6 +12,7 @@
 #include <zephyr/dt-bindings/dma/at32_dma.h>
 #include <zephyr/dt-bindings/clock/at32f435_437_clocks.h>
 #include <zephyr/dt-bindings/reset/at32f435_437_reset.h>
+#include <freq.h>
 
 / {
 	cpus {
@@ -58,6 +59,13 @@
 		pll: pll {
 			#clock-cells = <0>;
 			compatible = "at,at32-pll";
+			status = "disabled";
+		};
+
+		sysclk: sysclk {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <DT_FREQ_M(288)>;
 			status = "disabled";
 		};
 	};
@@ -300,7 +308,7 @@
 
 		usbotg_fs2: usb@40040000 {
 			compatible = "at,at32-otgfs";
-			reg = <40040000 0x40000>;
+			reg = <0x40040000 0x40000>;
 			interrupts = <77 0>;
 			num-in-eps = <8>;
 			num-out-eps = <8>;

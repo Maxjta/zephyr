@@ -12,4 +12,3 @@ void soc_early_init_hook(void)
 {
 	SystemInit();
 }
-
