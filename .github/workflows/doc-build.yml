@@ -242,7 +242,7 @@ jobs:
       run: |
         pip install -r doc/requirements.txt --require-hashes
         
-    - name: free disk space
+    - name: freedoc disk space
       run: |
         sudo swapoff -a
         sudo rm -f /swapfile
@@ -265,7 +265,15 @@ jobs:
         SPHINXOPTS="-q -j ${JOB_COUNT}" \
         LATEXMKOPTS="-quiet -halt-on-error" \
         make -C doc pdf
-
+      
+    - name: freedxx disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+        df -h
+        
     - name: upload-build
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
