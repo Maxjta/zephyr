@@ -241,7 +241,15 @@ jobs:
       working-directory: zephyr
       run: |
         pip install -r doc/requirements.txt --require-hashes
-
+        
+    - name: free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+        df -h
+        
     - name: build-docs
       shell: bash
       working-directory: zephyr
