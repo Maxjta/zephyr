@@ -130,7 +130,6 @@ jobs:
         sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo apt-get clean
         sudo apt-get autoremove -y
-        sudo swapoff /swapfile
         df -h
 
     - name: build-docs
