@@ -1,12 +1,12 @@
-.. _at_start_f437_board:
+.. _at_start_f435_board:
 
-AT-START-F437
+AT-START-F435
 ################
 
 Overview
 ********
 
-The AT START F405 board features an ARM Cortex-M4 based AT32F405 MCU
+The AT START F435 board features an ARM Cortex-M4 based AT32F405 MCU
 with a wide range of connectivity support and configurations. 
 
 Hardware

@@ -6,7 +6,7 @@ AT-START-F407
 Overview
 ********
 
-The AT START F405 board features an ARM Cortex-M4 based AT32F405 MCU
+The AT START F403A board features an ARM Cortex-M4 based AT32F405 MCU
 with a wide range of connectivity support and configurations. 
 
 Hardware

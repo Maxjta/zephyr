@@ -1,4 +1,4 @@
-.. _at_start_f407_board:
+.. _at_start_f403a_board:
 
 AT-START-F403A
 ################
