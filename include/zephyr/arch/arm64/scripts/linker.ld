@@ -81,10 +81,7 @@ SECTIONS
 {
 
 #include <zephyr/linker/rel-sections.ld>
-
-#ifdef CONFIG_LLEXT
 #include <zephyr/linker/llext-sections.ld>
-#endif
 
     /*
      * .plt and .iplt are here according to 'arm-zephyr-elf-ld --verbose',
@@ -130,6 +127,8 @@ SECTIONS
         *(.text)
         *(".text.*")
         *(.gnu.linkonce.t.*)
+
+#include <snippets-text-sections.ld>
 
 #include <zephyr/linker/kobject-text.ld>
 

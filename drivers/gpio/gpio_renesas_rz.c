@@ -102,14 +102,15 @@ static int gpio_rz_pin_config_get_raw(bsp_io_port_pin_t port_pin, struct gpio_rz
 	pm_value = GPIO_RZ_PM_VALUE_GET(*p_pm, pin);
 	pfc_value = GPIO_RZ_PFC_VALUE_GET(*p_pfc, pin);
 
-	if (p_value) {
-		rz_flags->gpio_flags = GPIO_OUTPUT_INIT_HIGH;
-	} else {
-		rz_flags->gpio_flags = GPIO_OUTPUT_INIT_LOW;
-	}
-
-	rz_flags->gpio_flags |= (pm_value << 16);
 	rz_flags->pfc = pfc_value;
+	rz_flags->gpio_flags = (pm_value << 16);
+	if (rz_flags->gpio_flags & GPIO_OUTPUT) {
+		if (p_value) {
+			rz_flags->gpio_flags |= GPIO_OUTPUT_INIT_HIGH;
+		} else {
+			rz_flags->gpio_flags |= GPIO_OUTPUT_INIT_LOW;
+		}
+	}
 
 	return 0;
 }
@@ -352,7 +353,7 @@ static int gpio_rz_int_enable(const struct device *gpio_int_dev, const struct de
 	/* Select interrupt source base on port and pin number. */
 	*tssr &= ~(0xFF << (int_num));
 	*tssr |= (GPIO_RZ_TSSR_VAL(gpio_config->port_num, pin)) << GPIO_RZ_TSSR_OFFSET(int_num);
-	/* Select TINT source(only for RZV2H) */
+	/* Select TINT source */
 	GPIO_RZ_TINT_SELECT_SOURCE_REG_CLEAR(int_num);
 	GPIO_RZ_TINT_SELECT_SOURCE_REG_SET(int_num);
 

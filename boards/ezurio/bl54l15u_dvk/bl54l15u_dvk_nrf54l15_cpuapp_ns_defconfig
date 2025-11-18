@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Nordic Semiconductor ASA
 # Copyright (c) 2025 Ezurio LLC
-# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+# SPDX-License-Identifier: Apache-2.0
 
 CONFIG_ARM_MPU=y
 CONFIG_HW_STACK_PROTECTION=y
@@ -34,4 +34,4 @@ CONFIG_TFM_LOG_LEVEL_SILENCE=n
 # from the non secure application directly. This needs to be set
 # otherwise nrfx will try to configure them, resulting in a bus
 # fault.
-CONFIG_SOC_NRF54LX_SKIP_CLOCK_CONFIG=y
+CONFIG_NRF_SKIP_CLOCK_CONFIG=y

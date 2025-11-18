@@ -304,13 +304,6 @@ config OMIT_FRAME_POINTER
 #
 # Generic Debugging Options
 #
-config DEBUG_INFO
-	bool "System debugging information"
-	help
-	  This option enables the addition of various information that can be
-	  used by debuggers in debugging the system, or enable additional
-	  debugging information to be reported at runtime.
-
 config EXCEPTION_STACK_TRACE
 	bool "Attempt to print stack traces upon exceptions"
 	default y
@@ -360,7 +353,7 @@ config CS_TRACE_DEFMT
 
 config CPU_LOAD
 	select TRACING
-	depends on CPU_CORTEX_M || RISCV
+	depends on CPU_CORTEX_M || RISCV || CPU_CORTEX_A
 	depends on !SMP
 	bool "CPU load measurement"
 

@@ -292,7 +292,7 @@ static int adxl362_attr_set_thresh(const struct device *dev,
 {
 	uint8_t reg;
 	uint16_t threshold = val->val1;
-	size_t ret;
+	int ret;
 
 	if (chan != SENSOR_CHAN_ACCEL_X &&
 	    chan != SENSOR_CHAN_ACCEL_Y &&
@@ -818,7 +818,7 @@ static int adxl362_init(const struct device *dev)
 
 #define ADXL362_RTIO_DEFINE(inst)                                    \
 	SPI_DT_IODEV_DEFINE(adxl362_iodev_##inst, DT_DRV_INST(inst),     \
-						ADXL362_SPI_CFG, 0U);                        \
+						ADXL362_SPI_CFG);                        \
 	RTIO_DEFINE(adxl362_rtio_ctx_##inst, 8, 8);
 
 #define ADXL362_DEFINE(inst)\
@@ -828,7 +828,7 @@ static int adxl362_init(const struct device *dev)
 				.iodev = &adxl362_iodev_##inst,)) \
 	};											\
 	static const struct adxl362_config adxl362_config_##inst = {				\
-		.bus = SPI_DT_SPEC_INST_GET(inst, ADXL362_SPI_CFG, 0),	\
+		.bus = SPI_DT_SPEC_INST_GET(inst, ADXL362_SPI_CFG),	\
 		.power_ctl = ADXL362_POWER_CTL_MEASURE(ADXL362_MEASURE_ON) |			\
 			(DT_INST_PROP(inst, wakeup_mode) * ADXL362_POWER_CTL_WAKEUP) |		\
 			(DT_INST_PROP(inst, autosleep) * ADXL362_POWER_CTL_AUTOSLEEP),		\

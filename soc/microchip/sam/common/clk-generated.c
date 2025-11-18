@@ -29,7 +29,7 @@ struct clk_generated {
 
 #define to_clk_generated(ptr) CONTAINER_OF(ptr, struct clk_generated, clk)
 
-static struct clk_generated clocks_gck[ID_PERIPH_MAX];
+static struct clk_generated clocks_gck[SOC_NUM_CLOCK_GENERATED];
 static uint32_t clocks_gck_idx;
 
 static int clk_generated_on(const struct device *dev, clock_control_subsys_t sys)
@@ -135,6 +135,8 @@ static int clk_generated_get_rate(const struct device *dev,
 		LOG_ERR("get parent clock rate failed.");
 		return ret;
 	}
+
+	gck->gckdiv = FIELD_GET(PMC_PCR_GCLKDIV_Msk, status);
 	*rate /= (gck->gckdiv + 1);
 
 	return 0;

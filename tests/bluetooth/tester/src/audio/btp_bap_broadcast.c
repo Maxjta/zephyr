@@ -391,7 +391,7 @@ uint8_t btp_bap_broadcast_source_setup(const void *cmd, uint16_t cmd_len, void *
 	struct bt_audio_codec_cfg codec_cfg;
 	const struct btp_bap_broadcast_source_setup_cmd *cp = cmd;
 	struct btp_bap_broadcast_source_setup_rp *rp = rsp;
-	uint32_t broadcast_id;
+	uint32_t broadcast_id = 0;
 
 	err = bt_rand(&broadcast_id, BT_AUDIO_BROADCAST_ID_SIZE);
 	if (err != 0) {
@@ -962,13 +962,18 @@ static void syncable_cb(struct bt_bap_broadcast_sink *sink, const struct bt_iso_
 	LOG_DBG("Broadcaster PA found, encrypted %d, requested_bis_sync %d", biginfo->encryption,
 		broadcaster->requested_bis_sync);
 
-	if (biginfo->encryption) {
+	broadcaster->biginfo_received = true;
+
+	if (biginfo->encryption && !broadcaster->broadcast_code_received) {
 		/* Wait for Set Broadcast Code and start sync at broadcast_code_cb */
+		LOG_DBG("BIGInfo received, but have not yet received broadcast code for encrypted "
+			"broadcast");
 		return;
 	}
 
-	if (!broadcaster->assistant_request || !broadcaster->requested_bis_sync) {
+	if (!broadcaster->assistant_request && broadcaster->requested_bis_sync == 0U) {
 		/* No sync with any BIS was requested yet */
+		LOG_DBG("BIGInfo received, but have not yet received request to sync to broadcast");
 		return;
 	}
 
@@ -1157,6 +1162,8 @@ static int pa_sync_req_cb(struct bt_conn *conn,
 		bt_addr_le_copy(&broadcaster->address, &recv_state->addr);
 	}
 
+	broadcast_source_to_sync = broadcaster;
+
 	broadcaster->sink_recv_state = recv_state;
 
 	btp_send_pas_sync_req_ev(conn, recv_state->src_id, recv_state->adv_sid,
@@ -1205,8 +1212,15 @@ static void broadcast_code_cb(struct bt_conn *conn,
 
 	broadcaster->sink_recv_state = recv_state;
 	(void)memcpy(broadcaster->sink_broadcast_code, broadcast_code, BT_ISO_BROADCAST_CODE_SIZE);
+	broadcaster->broadcast_code_received = true;
 
 	if (!broadcaster->requested_bis_sync) {
+		LOG_DBG("Broadcast code received, but not requested to sync");
+		return;
+	}
+
+	if (!broadcaster->biginfo_received) {
+		LOG_DBG("Broadcast code received, but have not yet received BIGInfo");
 		return;
 	}
 
@@ -1368,20 +1382,6 @@ uint8_t btp_bap_broadcast_sink_sync(const void *cmd, uint16_t cmd_len, void *rsp
 
 	LOG_DBG("");
 
-	broadcaster = remote_broadcaster_find(&cp->address, broadcast_id);
-	if (broadcaster == NULL) {
-		broadcaster = remote_broadcaster_alloc();
-		if (broadcaster == NULL) {
-			LOG_ERR("Failed to allocate broadcast source");
-			return BTP_STATUS_FAILED;
-		}
-
-		broadcaster->broadcast_id = broadcast_id;
-		bt_addr_le_copy(&broadcaster->address, &cp->address);
-	}
-
-	broadcast_source_to_sync = broadcaster;
-
 	if (IS_ENABLED(CONFIG_BT_PER_ADV_SYNC_TRANSFER_RECEIVER) && cp->past_avail) {
 		/* The Broadcast Assistant supports PAST transfer, and it has found
 		 * a Broadcaster for us. Let's sync to the Broadcaster PA with the PAST.
@@ -1409,7 +1409,22 @@ uint8_t btp_bap_broadcast_sink_sync(const void *cmd, uint16_t cmd_len, void *rsp
 		create_params.sid = cp->advertiser_sid;
 		create_params.skip = cp->skip;
 		create_params.timeout = cp->sync_timeout;
+
 		err = tester_gap_padv_create_sync(&create_params);
+
+		broadcaster = remote_broadcaster_find(&cp->address, broadcast_id);
+		if (broadcaster == NULL) {
+			broadcaster = remote_broadcaster_alloc();
+			if (broadcaster == NULL) {
+				LOG_ERR("Failed to allocate broadcast source");
+				return BTP_STATUS_FAILED;
+			}
+
+			broadcaster->broadcast_id = broadcast_id;
+			bt_addr_le_copy(&broadcaster->address, &cp->address);
+		}
+
+		broadcast_source_to_sync = broadcaster;
 	}
 
 	if (err != 0) {
@@ -1473,6 +1488,11 @@ uint8_t btp_bap_broadcast_sink_bis_sync(const void *cmd, uint16_t cmd_len, void 
 	}
 
 	broadcaster->requested_bis_sync = sys_le32_to_cpu(cp->requested_bis_sync);
+
+	if (!broadcaster->biginfo_received) {
+		LOG_DBG("Broadcast sync requested, but have not yet received BIGInfo");
+		return BTP_STATUS_SUCCESS;
+	}
 
 	err = bt_bap_broadcast_sink_sync(broadcaster->sink, broadcaster->requested_bis_sync,
 					 broadcaster->sink_streams,

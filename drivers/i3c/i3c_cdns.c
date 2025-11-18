@@ -34,7 +34,7 @@
 #define CONF_STATUS0_SUPPORTS_DDR         BIT(5)
 #define CONF_STATUS0_SEC_MASTER           BIT(4)
 /* And it was replaced with a Dev Role mask */
-#define CONF_STATUS0_DEV_ROLE(x)          ((x) & GENMASK(5, 4) >> 4)
+#define CONF_STATUS0_DEV_ROLE(x)          (((x) & GENMASK(5, 4)) >> 4)
 #define CONF_STATUS0_DEV_ROLE_MAIN_MASTER 0
 #define CONF_STATUS0_DEV_ROLE_SEC_MASTER  1
 #define CONF_STATUS0_DEV_ROLE_SLAVE       2
@@ -1088,7 +1088,18 @@ static int cdns_i3c_controller_ibi_enable(const struct device *dev, struct i3c_d
 	sir_cfg = SIR_MAP_DEV_ROLE(I3C_BCR_DEVICE_ROLE(target->bcr)) |
 		  SIR_MAP_DEV_DA(target->dynamic_addr);
 	if (i3c_ibi_has_payload(target)) {
-		sir_cfg |= SIR_MAP_DEV_PL(target->data_length.max_ibi);
+		/*
+		 * the I3C spec says that a len of 0x00, means no limit, but the cdns i3c doesn't
+		 * reconigize stops when loading a new word in the FIFO, so if multiple ibis come in
+		 * quick succession, then they may be all in the same fifo word and may not be read
+		 * correctly.
+		 */
+		if (target->data_length.max_ibi == 0x00) {
+			sir_cfg |= SIR_MAP_DEV_PL(
+				MIN(SIR_MAP_PL_MAX, CONFIG_I3C_IBI_MAX_PAYLOAD_SIZE));
+		} else {
+			sir_cfg |= SIR_MAP_DEV_PL(target->data_length.max_ibi);
+		}
 	} else {
 		/* Set to 1 for MDB */
 		sir_cfg |= SIR_MAP_DEV_PL(1);
@@ -3727,7 +3738,9 @@ static int cdns_i3c_bus_init(const struct device *dev)
 		/* Sleep to wait for bus idle. */
 		k_busy_wait(201);
 		/* Perform bus initialization */
-		ret = i3c_bus_init(dev, &config->common.dev_list);
+		if (config->common.dev_list.num_i3c > 0) {
+			ret = i3c_bus_init(dev, &config->common.dev_list);
+		}
 #ifdef CONFIG_I3C_USE_IBI
 		/* Bus Initialization Complete, allow HJ ACKs */
 		sys_write32(CTRL_HJ_ACK | sys_read32(config->base + CTRL), config->base + CTRL);

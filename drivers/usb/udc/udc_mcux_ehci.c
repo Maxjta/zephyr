@@ -531,7 +531,7 @@ usb_status_t USB_DeviceNotificationTrigger(void *handle, void *msg)
 		udc_submit_event(dev, UDC_EVT_VBUS_READY, 0);
 		break;
 	case kUSB_DeviceNotifySOF:
-		udc_submit_event(dev, UDC_EVT_SOF, 0);
+		udc_submit_sof_event(dev);
 		break;
 	default:
 		udc_mcux_event_submit(dev, mcux_msg);
@@ -706,6 +706,12 @@ static int udc_mcux_init(const struct device *dev)
 		&priv->mcux_device, &(priv->mcux_device.controllerHandle));
 	if (status != kStatus_USB_Success) {
 		return -ENOMEM;
+	}
+
+	if (!IS_ENABLED(CONFIG_UDC_DRIVER_HIGH_SPEED_SUPPORT_ENABLED)) {
+		USBHS_Type *usbBase = (USBHS_Type *)config->base;
+
+		usbBase->PORTSC1 |= USBHS_PORTSC1_PFSC_MASK;
 	}
 
 	/* enable USB interrupt */

@@ -622,6 +622,17 @@ static inline const char *bt_gatt_err_to_str(int gatt_err)
  */
 void bt_gatt_cb_register(struct bt_gatt_cb *cb);
 
+/** @brief Unregister GATT callbacks.
+ *
+ *  Unregister callbacks for monitoring the state of GATT. The callback
+ *  struct should be one that was previously registered.
+ *
+ *  @param cb Callback struct.
+ *
+ *  @return 0 in case of success or negative value in case of error.
+ */
+int bt_gatt_cb_unregister(struct bt_gatt_cb *cb);
+
 /** @brief Register GATT authorization callbacks.
  *
  *  Register callbacks to perform application-specific authorization of GATT
@@ -918,6 +929,7 @@ ssize_t bt_gatt_attr_read_service(struct bt_conn *conn,
  *  Read include service attribute value from local database storing the result
  *  into buffer after encoding it.
  *  @note Only use this with attributes which user_data is a ``bt_gatt_include``.
+ *  The function returns EINVAL if @p attr or @p attr->user_data is NULL.
  *
  *  @param conn Connection object.
  *  @param attr Attribute to read.
@@ -1896,6 +1908,9 @@ struct bt_gatt_read_params;
  *  When reading using by_uuid, `params->start_handle` is the attribute handle
  *  for this `data` item.
  *
+ *  If the received data length is invalid, the callback will called with the
+ *  error @ref BT_ATT_ERR_INVALID_PDU.
+ *
  *  @param conn Connection object.
  *  @param err ATT error code.
  *  @param params Read parameters used.
@@ -2004,6 +2019,8 @@ struct bt_gatt_read_params {
  *  The Response comes in callback @p params->func. The callback is run from
  *  the context specified by 'config BT_RECV_CONTEXT'.
  *  @p params must remain valid until start of callback.
+ *  If the received data length is invalid, the callback @p params->func will
+ *  called with the error @ref BT_ATT_ERR_INVALID_PDU.
  *
  *  @param conn Connection object.
  *  @param params Read parameters.

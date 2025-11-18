@@ -189,7 +189,7 @@ static int mipid02_get_fmt(const struct device *dev, struct video_format *fmt)
 		}
 
 		desc = mipid02_get_format_desc(fmt->pixelformat);
-		if (desc) {
+		if (desc == NULL) {
 			LOG_ERR("Sensor format not supported by the ST-MIPID02");
 			return -EIO;
 		}
@@ -252,9 +252,6 @@ static int mipid02_get_caps(const struct device *dev, struct video_caps *caps)
 	}
 
 	caps->format_caps = drv_data->caps;
-	caps->min_vbuf_count = 1;
-	caps->min_line_count = LINE_COUNT_HEIGHT;
-	caps->max_line_count = LINE_COUNT_HEIGHT;
 
 	return 0;
 }

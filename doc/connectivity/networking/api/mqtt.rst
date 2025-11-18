@@ -13,7 +13,7 @@ Overview
 MQTT (Message Queuing Telemetry Transport) is an application layer protocol
 which works on top of the TCP/IP stack. It is a lightweight
 publish/subscribe messaging transport for machine-to-machine communication.
-For more information about the protocol itself, see http://mqtt.org/.
+For more information about the protocol itself, see https://mqtt.org/.
 
 Zephyr provides an MQTT client library built on top of BSD sockets API. The
 library can be enabled with :kconfig:option:`CONFIG_MQTT_LIB` Kconfig option and
@@ -51,7 +51,7 @@ of the MQTT client and can be shared among MQTT clients:
 .. code-block:: c
 
    /* MQTT Broker address information. */
-   static struct sockaddr_storage broker;
+   static struct net_sockaddr_storage broker;
 
 An MQTT client library will notify MQTT events to the application through a
 callback function created to handle respective events:

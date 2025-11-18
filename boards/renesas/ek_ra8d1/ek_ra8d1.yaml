@@ -14,4 +14,7 @@ supported:
   - usbd
   - display
   - counter
+  - i2s
+  - i3c
+  - video
 vendor: renesas

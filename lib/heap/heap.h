@@ -74,7 +74,7 @@ struct z_heap {
 	size_t allocated_bytes;
 	size_t max_allocated_bytes;
 #endif
-	struct z_heap_bucket buckets[0];
+	struct z_heap_bucket buckets[];
 };
 
 static inline bool big_heap_chunks(chunksz_t chunks)
@@ -245,7 +245,7 @@ static ALWAYS_INLINE chunksz_t bytes_to_chunksz(struct z_heap *h, size_t bytes, 
 	size_t oddments = ((bytes % CHUNK_UNIT) + (extra % CHUNK_UNIT) +
 			   chunk_header_bytes(h) + CHUNK_UNIT - 1U) / CHUNK_UNIT;
 
-	return (chunksz_t)MIN(chunks + oddments, h->end_chunk);
+	return (chunksz_t)min(chunks + oddments, h->end_chunk);
 }
 
 static inline chunksz_t min_chunk_size(struct z_heap *h)
@@ -255,7 +255,7 @@ static inline chunksz_t min_chunk_size(struct z_heap *h)
 
 static inline size_t chunksz_to_bytes(struct z_heap *h, chunksz_t chunksz_in)
 {
-	return chunksz_in * CHUNK_UNIT - chunk_header_bytes(h);
+	return chunksz_in * CHUNK_UNIT;
 }
 
 static inline int bucket_idx(struct z_heap *h, chunksz_t sz)

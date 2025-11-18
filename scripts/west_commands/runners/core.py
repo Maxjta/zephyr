@@ -318,6 +318,7 @@ class RunnerCaps:
     hide_load_files: bool = False
     rtt: bool = False  # This capability exists separately from the rtt command
                        # to allow other commands to use the rtt address
+    dry_run: bool = False
 
     def __post_init__(self):
         if self.mult_dev_ids and not self.dev_id:
@@ -376,11 +377,6 @@ class _DTFlashAction(argparse.Action):
         else:
             namespace.dt_flash = False
 
-
-class _ToggleAction(argparse.Action):
-
-    def __call__(self, parser, args, ignored, option):
-        setattr(args, self.dest, not option.startswith('--no-'))
 
 class DeprecatedAction(argparse.Action):
 
@@ -491,6 +487,9 @@ class ZephyrBinaryRunner(abc.ABC):
 
         self.logger = logging.getLogger(f'runners.{self.name()}')
         '''logging.Logger for this instance.'''
+
+        self.dry_run = _DRY_RUN
+        '''log commands instead of executing them. Can be set by subclasses'''
 
     @staticmethod
     def get_runners() -> list[type['ZephyrBinaryRunner']]:
@@ -610,14 +609,12 @@ class ZephyrBinaryRunner(abc.ABC):
                                 help='path to zephyr.mot'
                                 if not caps.file else 'Deprecated, use -f/--file instead.')
 
-        parser.add_argument('--erase', '--no-erase', nargs=0,
-                            action=_ToggleAction,
+        parser.add_argument('--erase', action=argparse.BooleanOptionalAction,
                             help=("mass erase flash before loading, or don't. "
                                   "Default action depends on each specific runner."
                                   if caps.erase else argparse.SUPPRESS))
 
-        parser.add_argument('--reset', '--no-reset', nargs=0,
-                            action=_ToggleAction,
+        parser.add_argument('--reset', action=argparse.BooleanOptionalAction,
                             help=("reset device after flashing, or don't. "
                                   "Default action depends on each specific runner."
                                   if caps.reset else argparse.SUPPRESS))
@@ -638,6 +635,10 @@ class ZephyrBinaryRunner(abc.ABC):
                                 it will be autodetected if possible""")
         else:
             parser.add_argument('--rtt-address', help=argparse.SUPPRESS)
+
+        parser.add_argument('--dry-run', action='store_true',
+                            help=('''Print all the commands without actually
+                            executing them''' if caps.dry_run else argparse.SUPPRESS))
 
         # Runner-specific options.
         cls.do_add_parser(parser)
@@ -685,6 +686,8 @@ class ZephyrBinaryRunner(abc.ABC):
             _missing_cap(cls, '--file-type')
         if args.rtt_address and not caps.rtt:
             _missing_cap(cls, '--rtt-address')
+        if args.dry_run and not caps.dry_run:
+            _missing_cap(cls, '--dry-run')
 
         ret = cls.do_create(cfg, args)
         if args.erase:
@@ -860,7 +863,7 @@ class ZephyrBinaryRunner(abc.ABC):
 
     def _log_cmd(self, cmd: list[str]):
         escaped = ' '.join(shlex.quote(s) for s in cmd)
-        if not _DRY_RUN:
+        if not self.dry_run:
             self.logger.debug(escaped)
         else:
             self.logger.info(escaped)
@@ -873,7 +876,7 @@ class ZephyrBinaryRunner(abc.ABC):
         using subprocess directly, to keep accurate debug logs.
         '''
         self._log_cmd(cmd)
-        if _DRY_RUN:
+        if self.dry_run:
             return 0
         return subprocess.call(cmd, **kwargs)
 
@@ -885,7 +888,7 @@ class ZephyrBinaryRunner(abc.ABC):
         using subprocess directly, to keep accurate debug logs.
         '''
         self._log_cmd(cmd)
-        if _DRY_RUN:
+        if self.dry_run:
             return
         subprocess.check_call(cmd, **kwargs)
 
@@ -897,7 +900,7 @@ class ZephyrBinaryRunner(abc.ABC):
         using subprocess directly, to keep accurate debug logs.
         '''
         self._log_cmd(cmd)
-        if _DRY_RUN:
+        if self.dry_run:
             return b''
         return subprocess.check_output(cmd, **kwargs)
 
@@ -918,7 +921,7 @@ class ZephyrBinaryRunner(abc.ABC):
             preexec = os.setsid # type: ignore
 
         self._log_cmd(cmd)
-        if _DRY_RUN:
+        if self.dry_run:
             return _DebugDummyPopen()  # type: ignore
 
         return subprocess.Popen(cmd, creationflags=cflags, preexec_fn=preexec, **kwargs)

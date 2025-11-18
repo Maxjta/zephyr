@@ -4,15 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/drivers/rtc.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(net_config, CONFIG_NET_CONFIG_LOG_LEVEL);
 
 #include <errno.h>
+#include <time.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/sntp.h>
-#include <zephyr/posix/time.h>
 
 #ifdef CONFIG_NET_CONFIG_SNTP_INIT_RESYNC
 static void sntp_resync_handler(struct k_work *work);
@@ -30,11 +31,11 @@ static int sntp_init_helper(struct sntp_time *tm)
 	struct net_if *iface = net_if_get_default();
 
 	if (!net_ipv4_is_addr_unspecified(&iface->config.dhcpv4.ntp_addr)) {
-		struct sockaddr_in sntp_addr = {0};
+		struct net_sockaddr_in sntp_addr = {0};
 
-		sntp_addr.sin_family = AF_INET;
+		sntp_addr.sin_family = NET_AF_INET;
 		sntp_addr.sin_addr.s_addr = iface->config.dhcpv4.ntp_addr.s_addr;
-		return sntp_simple_addr((struct sockaddr *)&sntp_addr, sizeof(sntp_addr),
+		return sntp_simple_addr((struct net_sockaddr *)&sntp_addr, sizeof(sntp_addr),
 					CONFIG_NET_CONFIG_SNTP_INIT_TIMEOUT, tm);
 	}
 	if (sizeof(CONFIG_NET_CONFIG_SNTP_INIT_SERVER) == 1) {
@@ -47,6 +48,40 @@ static int sntp_init_helper(struct sntp_time *tm)
 			   CONFIG_NET_CONFIG_SNTP_INIT_TIMEOUT, tm);
 }
 
+__maybe_unused static int timespec_to_rtc_time(const struct timespec *in, struct rtc_time *out)
+{
+	if (gmtime_r(&in->tv_sec, rtc_time_to_tm(out)) == NULL) {
+		return -EINVAL;
+	}
+
+	out->tm_nsec = in->tv_nsec;
+
+	return 0;
+}
+
+static void sntp_set_rtc(__maybe_unused const struct timespec *tspec)
+{
+#ifdef CONFIG_NET_CONFIG_CLOCK_SNTP_SET_RTC
+	const struct device *dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_rtc));
+	struct rtc_time rtctime;
+	int res;
+
+	if (!device_is_ready(dev)) {
+		return;
+	}
+
+	if (timespec_to_rtc_time(tspec, &rtctime) != 0) {
+		LOG_ERR("Convert timespec to set RTC failed");
+		return;
+	}
+
+	res = rtc_set_time(dev, &rtctime);
+	if (res != 0) {
+		LOG_ERR("Set RTC failed: %d", res);
+	}
+#endif
+}
+
 int net_init_clock_via_sntp(void)
 {
 	struct sntp_time ts;
@@ -54,13 +89,17 @@ int net_init_clock_via_sntp(void)
 	int res = sntp_init_helper(&ts);
 
 	if (res < 0) {
-		LOG_ERR("Cannot set time using SNTP");
+		LOG_ERR("Cannot set time using SNTP: %d", res);
 		goto end;
 	}
 
 	tspec.tv_sec = ts.seconds;
 	tspec.tv_nsec = ((uint64_t)ts.fraction * (1000 * 1000 * 1000)) >> 32;
-	res = clock_settime(CLOCK_REALTIME, &tspec);
+	res = sys_clock_settime(SYS_CLOCK_REALTIME, &tspec);
+
+	sntp_set_rtc(&tspec);
+
+	LOG_DBG("Time synced using SNTP");
 
 end:
 #ifdef CONFIG_NET_CONFIG_SNTP_INIT_RESYNC
@@ -75,21 +114,13 @@ end:
 #ifdef CONFIG_NET_CONFIG_SNTP_INIT_RESYNC
 static void sntp_resync_handler(struct k_work *work)
 {
-	int res;
-
 	ARG_UNUSED(work);
-
-	res = net_init_clock_via_sntp();
-	if (res < 0) {
-		LOG_ERR("Cannot resync time using SNTP");
-		return;
-	}
-	LOG_DBG("Time resynced using SNTP");
+	(void)net_init_clock_via_sntp();
 }
 #endif /* CONFIG_NET_CONFIG_SNTP_INIT_RESYNC */
 
 #ifdef CONFIG_NET_CONFIG_SNTP_INIT_USE_CONNECTION_MANAGER
-static void l4_event_handler(uint32_t mgmt_event, struct net_if *iface, void *info,
+static void l4_event_handler(uint64_t mgmt_event, struct net_if *iface, void *info,
 			     size_t info_length, void *user_data)
 {
 	ARG_UNUSED(iface);

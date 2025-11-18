@@ -116,16 +116,17 @@
 			write-block-size = <16>;
 		};
 
-		cpuapp_uicr: uicr@fff8000 {
-			compatible = "nordic,nrf-uicr-v2";
-			reg = <0xfff8000 DT_SIZE_K(2)>;
-			domain = <2>;
-		};
+		uicr: uicr@fff8000 {
+			compatible = "nordic,nrf-uicr";
+			reg = <0xfff8000 DT_SIZE_K(3)>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0xfff8000 DT_SIZE_K(3)>;
 
-		cpurad_uicr: uicr@fffa000 {
-			compatible = "nordic,nrf-uicr-v2";
-			reg = <0xfffa000 DT_SIZE_K(2)>;
-			domain = <3>;
+			bicr: bicr@800 {
+				compatible = "nordic,nrf-bicr";
+				reg = <0x800 204>;
+			};
 		};
 
 		ficr: ficr@fffe000 {
@@ -169,10 +170,12 @@
 				reg = <0xd000 0x1000>;
 				clocks = <&fll16m>;
 				clock-frequency = <DT_FREQ_M(320)>;
-				nordic,ficrs =
-					<&ficr NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_VSUP>,
-					<&ficr NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_COARSE_0>,
-					<&ficr NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_FINE_0>;
+				nordic,ficrs = <&ficr
+						NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_VSUP>,
+					       <&ficr
+						NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_COARSE_0>,
+					       <&ficr
+						NRF_FICR_TRIM_APPLICATION_HSFLL_TRIM_FINE_0>;
 				nordic,ficr-names = "vsup", "coarse", "fine";
 			};
 
@@ -221,10 +224,9 @@
 				reg = <0xd000 0x1000>;
 				clocks = <&fll16m>;
 				clock-frequency = <DT_FREQ_M(256)>;
-				nordic,ficrs =
-					<&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_VSUP>,
-					<&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_COARSE_1>,
-					<&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_FINE_1>;
+				nordic,ficrs = <&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_VSUP>,
+					       <&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_COARSE_1>,
+					       <&ficr NRF_FICR_TRIM_RADIOCORE_HSFLL_TRIM_FINE_1>;
 				nordic,ficr-names = "vsup", "coarse", "fine";
 			};
 
@@ -250,6 +252,7 @@
 			dppic020: dppic@22000 {
 				compatible = "nordic,nrf-dppic-local";
 				reg = <0x22000 0x1000>;
+				channels = <32>;
 				status = "disabled";
 			};
 
@@ -357,6 +360,28 @@
 			};
 		};
 
+		tdd_peripherals: peripheral@bf000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			reg = <0xbf000000 0x1000000>;
+			ranges = <0x0 0xbf000000 0x1000000>;
+
+			tbm: tbm@3000 {
+				compatible = "nordic,nrf-tbm";
+				reg = <0x3000 0x408>;
+				status = "disabled";
+				interrupts = <127 NRF_DEFAULT_IRQ_PRIORITY>;
+			};
+
+			hsfll200: clock@4000 {
+				compatible = "fixed-clock";
+				reg = <0x4000 0x1000>;
+				#clock-cells = <0>;
+				status = "disabled";
+				clock-frequency = <DT_FREQ_M(320)>;
+			};
+		};
+
 		global_peripherals: peripheral@5f000000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -383,6 +408,7 @@
 				reg-names = "wrapper", "core";
 				interrupts = <149 NRF_DEFAULT_IRQ_PRIORITY>;
 				clock-frequency = <DT_FREQ_M(400)>;
+				packet-data-limit = <65536>;
 				fifo-depth = <32>;
 				status = "disabled";
 			};
@@ -411,7 +437,7 @@
 				#mbox-cells = <1>;
 			};
 
-			canpll: clock-controller@8c2000{
+			canpll: clock-controller@8c2000 {
 				compatible = "nordic,nrf-auxpll";
 				reg = <0x8c2000 0x1000>;
 				interrupts = <194 NRF_DEFAULT_IRQ_PRIORITY>;
@@ -478,6 +504,7 @@
 				status = "disabled";
 				interrupts = <228 NRF_DEFAULT_IRQ_PRIORITY>;
 				#pwm-cells = <3>;
+				idleout-supported;
 			};
 
 			spi120: spi@8e6000 {
@@ -766,6 +793,7 @@
 				status = "disabled";
 				interrupts = <420 NRF_DEFAULT_IRQ_PRIORITY>;
 				#pwm-cells = <3>;
+				idleout-supported;
 			};
 
 			i2c130: i2c@9a5000 {
@@ -880,6 +908,7 @@
 				status = "disabled";
 				interrupts = <436 NRF_DEFAULT_IRQ_PRIORITY>;
 				#pwm-cells = <3>;
+				idleout-supported;
 			};
 
 			i2c132: i2c@9b5000 {
@@ -994,6 +1023,7 @@
 				status = "disabled";
 				interrupts = <452 NRF_DEFAULT_IRQ_PRIORITY>;
 				#pwm-cells = <3>;
+				idleout-supported;
 			};
 
 			i2c134: i2c@9c5000 {
@@ -1108,6 +1138,7 @@
 				status = "disabled";
 				interrupts = <468 NRF_DEFAULT_IRQ_PRIORITY>;
 				#pwm-cells = <3>;
+				idleout-supported;
 			};
 
 			i2c136: i2c@9d5000 {

@@ -9,8 +9,8 @@
 #include <zephyr/drivers/stepper.h>
 
 #include <adi_tmc_bus.h>
+#include <adi_tmc5xxx_common.h>
 #include "tmc51xx.h"
-#include "../adi_tmc5xxx_common.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(tmc51xx, CONFIG_STEPPER_LOG_LEVEL);
@@ -406,11 +406,6 @@ int tmc51xx_stepper_set_max_velocity(const struct device *dev, uint32_t velocity
 static int tmc51xx_stepper_set_micro_step_res(const struct device *dev,
 					      enum stepper_micro_step_resolution res)
 {
-	if (!VALID_MICRO_STEP_RES(res)) {
-		LOG_ERR("Invalid micro step resolution %d", res);
-		return -ENOTSUP;
-	}
-
 	uint32_t reg_value;
 	int err;
 
@@ -786,6 +781,23 @@ static int tmc51xx_init(const struct device *dev)
 	return 0;
 }
 
+static int tmc51xx_stepper_stop(const struct device *dev)
+{
+	int err;
+
+	err = tmc51xx_write(dev, TMC51XX_RAMPMODE, TMC5XXX_RAMPMODE_POSITIVE_VELOCITY_MODE);
+	if (err != 0) {
+		return -EIO;
+	}
+
+	err = tmc51xx_write(dev, TMC51XX_VMAX, 0);
+	if (err != 0) {
+		return -EIO;
+	}
+
+	return 0;
+}
+
 static DEVICE_API(stepper, tmc51xx_api) = {
 	.enable = tmc51xx_stepper_enable,
 	.disable = tmc51xx_stepper_disable,
@@ -797,6 +809,7 @@ static DEVICE_API(stepper, tmc51xx_api) = {
 	.get_actual_position = tmc51xx_stepper_get_actual_position,
 	.move_to = tmc51xx_stepper_move_to,
 	.run = tmc51xx_stepper_run,
+	.stop = tmc51xx_stepper_stop,
 	.set_event_callback = tmc51xx_stepper_set_event_callback,
 };
 
@@ -805,8 +818,7 @@ static DEVICE_API(stepper, tmc51xx_api) = {
 	.comm_type = TMC_COMM_SPI,                                                                 \
 	.bus.spi = SPI_DT_SPEC_INST_GET(inst,                                                      \
 					(SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB | SPI_MODE_CPOL |   \
-					 SPI_MODE_CPHA | SPI_WORD_SET(8)),                         \
-					0),                                                        \
+					 SPI_MODE_CPHA | SPI_WORD_SET(8))),                        \
 	.bus_io = &tmc51xx_spi_bus_io,                                                             \
 	.diag0_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, diag0_gpios, {0})
 

@@ -23,6 +23,8 @@ LOG_MODULE_REGISTER(net_test, CONFIG_DNS_RESOLVER_LOG_LEVEL);
 #include <zephyr/net/net_ip.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/dns_resolve.h>
+#include <zephyr/net/hostname.h>
+#include <zephyr/net/socket.h>
 
 #define NET_LOG_ENABLED 1
 #include "net_private.h"
@@ -43,20 +45,20 @@ LOG_MODULE_REGISTER(net_test, CONFIG_DNS_RESOLVER_LOG_LEVEL);
 
 #if defined(CONFIG_NET_IPV6)
 /* Interface 1 addresses */
-static struct in6_addr my_addr1 = { { { 0x20, 0x01, 0x0d, 0xb8, 1, 0, 0, 0,
+static struct net_in6_addr my_addr1 = { { { 0x20, 0x01, 0x0d, 0xb8, 1, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 0, 0x1 } } };
-static struct in6_addr my_addr3 = { { { 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0,
+static struct net_in6_addr my_addr3 = { { { 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 0, 0x1 } } };
 
 /* Extra address is assigned to ll_addr */
-static struct in6_addr ll_addr = { { { 0xfe, 0x80, 0x43, 0xb8, 0, 0, 0, 0,
+static struct net_in6_addr ll_addr = { { { 0xfe, 0x80, 0x43, 0xb8, 0, 0, 0, 0,
 				       0, 0, 0, 0xf2, 0xaa, 0x29, 0x02,
 				       0x04 } } };
 #endif
 
 #if defined(CONFIG_NET_IPV4)
 /* Interface 1 addresses */
-static struct in_addr my_addr2 = { { { 192, 0, 2, 1 } } };
+static struct net_in_addr my_addr2 = { { { 192, 0, 2, 1 } } };
 #endif
 
 static struct net_if *iface1;
@@ -386,14 +388,14 @@ ZTEST(dns_resolve, test_dns_query_ipv4_server_count)
 			continue;
 		}
 
-		if (ctx->servers[i].dns_server.sa_family == AF_INET6) {
+		if (ctx->servers[i].dns_server.sa_family == NET_AF_INET6) {
 			continue;
 		}
 
 		count++;
 
 		if (net_sin(&ctx->servers[i].dns_server)->sin_port ==
-		    ntohs(53)) {
+		    net_ntohs(53)) {
 			port++;
 		}
 	}
@@ -416,14 +418,14 @@ ZTEST(dns_resolve, test_dns_query_ipv6_server_count)
 			continue;
 		}
 
-		if (ctx->servers[i].dns_server.sa_family == AF_INET) {
+		if (ctx->servers[i].dns_server.sa_family == NET_AF_INET) {
 			continue;
 		}
 
 		count++;
 
 		if (net_sin6(&ctx->servers[i].dns_server)->sin6_port ==
-		    ntohs(53)) {
+		    net_ntohs(53)) {
 			port++;
 		}
 	}
@@ -664,7 +666,7 @@ ZTEST(dns_resolve, test_dns_query_ipv6)
 }
 
 struct expected_addr_status {
-	struct sockaddr addr;
+	struct net_sockaddr addr;
 	int status1;
 	int status2;
 	const char *caller;
@@ -685,7 +687,7 @@ void dns_result_numeric_cb(enum dns_resolve_status status,
 		zassert_true(false, "Invalid status");
 	}
 
-	if (info && info->ai_family == AF_INET) {
+	if (info && info->ai_family == NET_AF_INET) {
 #if defined(CONFIG_NET_IPV4)
 		if (net_ipv4_addr_cmp(&net_sin(&info->ai_addr)->sin_addr,
 				      &my_addr2) != true) {
@@ -694,7 +696,7 @@ void dns_result_numeric_cb(enum dns_resolve_status status,
 #endif
 	}
 
-	if (info && info->ai_family == AF_INET6) {
+	if (info && info->ai_family == NET_AF_INET6) {
 #if defined(CONFIG_NET_IPV6)
 		if (net_ipv6_addr_cmp(&net_sin6(&info->ai_addr)->sin6_addr,
 				      &my_addr3) != true) {
@@ -768,7 +770,7 @@ ZTEST(dns_resolve, test_dns_query_ipv6_numeric)
 ZTEST(dns_resolve, test_mdns_ipv4_igmp_group)
 {
 	struct net_if_mcast_addr *maddr;
-	struct sockaddr_in addr4;
+	struct net_sockaddr_in addr4;
 	bool st;
 
 	/* Skip this test if mDNS responder is enabled because it will join
@@ -779,7 +781,7 @@ ZTEST(dns_resolve, test_mdns_ipv4_igmp_group)
 	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV4_IGMP);
 
 	st = net_ipaddr_parse(MDNS_IPV4_ADDR, sizeof(MDNS_IPV4_ADDR) - 1,
-			      (struct sockaddr *)&addr4);
+			      (struct net_sockaddr *)&addr4);
 	zassert_true(st, "Cannot parse IPv4 address");
 
 	maddr = net_if_ipv4_maddr_lookup(&addr4.sin_addr, NULL);
@@ -792,7 +794,7 @@ ZTEST(dns_resolve, test_mdns_ipv4_igmp_group)
 ZTEST(dns_resolve, test_mdns_ipv6_mld_group)
 {
 	struct net_if_mcast_addr *maddr;
-	struct sockaddr_in6 addr6;
+	struct net_sockaddr_in6 addr6;
 	bool st;
 
 	/* Skip this test if mDNS responder is enabled because it will join
@@ -803,7 +805,7 @@ ZTEST(dns_resolve, test_mdns_ipv6_mld_group)
 	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV6_MLD);
 
 	st = net_ipaddr_parse(MDNS_IPV6_ADDR, sizeof(MDNS_IPV6_ADDR) - 1,
-			      (struct sockaddr *)&addr6);
+			      (struct net_sockaddr *)&addr6);
 	zassert_true(st, "Cannot parse IPv6 address");
 
 	maddr = net_if_ipv6_maddr_lookup(&addr6.sin6_addr, NULL);
@@ -811,6 +813,100 @@ ZTEST(dns_resolve, test_mdns_ipv6_mld_group)
 
 	st = net_if_ipv6_maddr_is_joined(maddr);
 	zassert_true(st, "IPv6 mDNS group not joined");
+}
+
+#define MAX_HOSTNAME_LEN 64
+
+ZTEST(dns_resolve, test_dns_hostname_resolve_ipv4)
+{
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_HOSTNAME_ENABLE);
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV4);
+
+	struct zsock_addrinfo hints = { 0 };
+	struct zsock_addrinfo *addrinfos;
+	char hostname[MAX_HOSTNAME_LEN + 1] = { 0 };
+	int ret;
+
+	hints.ai_family = NET_AF_INET;
+	strncpy(hostname, net_hostname_get(), sizeof(hostname) - 1);
+
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_equal(ret, 0, "getaddrinfo failed with %d (%s)",
+		      ret, zsock_gai_strerror(ret));
+
+	DBG("Query %s -> address  %s\n", hostname,
+	    net_sprint_ipv4_addr(&net_sin(addrinfos[0].ai_addr)->sin_addr));
+
+	hostname[strlen(hostname) - 1] = '\0';
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_not_equal(ret, 0, "getaddrinfo succeed but should have failed");
+}
+
+ZTEST(dns_resolve, test_dns_hostname_resolve_ipv6)
+{
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_HOSTNAME_ENABLE);
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV6);
+
+	struct zsock_addrinfo hints = { 0 };
+	struct zsock_addrinfo *addrinfos;
+	char hostname[MAX_HOSTNAME_LEN + 1] = { 0 };
+	int ret;
+
+	hints.ai_family = NET_AF_INET6;
+	strncpy(hostname, net_hostname_get(), sizeof(hostname) - 1);
+
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_equal(ret, 0, "getaddrinfo failed with %d (%s)",
+		      ret, zsock_gai_strerror(ret));
+
+	DBG("Query %s -> address  %s\n", hostname,
+	    net_sprint_ipv6_addr(&net_sin6(addrinfos[0].ai_addr)->sin6_addr));
+
+	hostname[strlen(hostname) - 1] = '\0';
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_not_equal(ret, 0, "getaddrinfo succeed but should have failed");
+}
+
+ZTEST(dns_resolve, test_dns_localhost_resolve_ipv4)
+{
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV4);
+
+	struct net_in_addr addr = INADDR_LOOPBACK_INIT;
+	struct zsock_addrinfo hints = { 0 };
+	struct zsock_addrinfo *addrinfos;
+	const char *hostname = "localhost";
+	int ret;
+
+	hints.ai_family = NET_AF_INET;
+
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_equal(ret, 0, "getaddrinfo failed with %d (%s)",
+		      ret, zsock_gai_strerror(ret));
+
+	zassert_equal(memcmp(&net_sin(addrinfos[0].ai_addr)->sin_addr,
+			     &addr, sizeof(struct net_in_addr)),
+		      0, "not loopback address");
+}
+
+ZTEST(dns_resolve, test_dns_localhost_resolve_ipv6)
+{
+	Z_TEST_SKIP_IFNDEF(CONFIG_NET_IPV6);
+
+	struct net_in6_addr addr = IN6ADDR_LOOPBACK_INIT;
+	struct zsock_addrinfo hints = { 0 };
+	struct zsock_addrinfo *addrinfos;
+	const char *hostname = "localhost";
+	int ret;
+
+	hints.ai_family = NET_AF_INET6;
+
+	ret = zsock_getaddrinfo(hostname, NULL, &hints, &addrinfos);
+	zassert_equal(ret, 0, "getaddrinfo failed with %d (%s)",
+		      ret, zsock_gai_strerror(ret));
+
+	zassert_equal(memcmp(&net_sin6(addrinfos[0].ai_addr)->sin6_addr,
+			     &addr, sizeof(struct net_in6_addr)),
+		      0, "not loopback address");
 }
 
 ZTEST_SUITE(dns_resolve, NULL, test_init, NULL, NULL, NULL);

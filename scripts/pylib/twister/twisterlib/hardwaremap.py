@@ -147,6 +147,7 @@ class HardwareMap:
         'Microsoft',
         'Nuvoton',
         'Espressif',
+        'SecuringHardware.com',
     ]
 
     runner_mapping = {
@@ -159,7 +160,7 @@ class HardwareMap:
             'J-Link OB'
         ],
         'openocd': [
-            'STM32 STLink', '^XDS110.*', 'STLINK-V3'
+            'STM32 STLink', '^XDS110.*', 'STLINK-V3', '^Tigard.*'
         ],
         'dediprog': [
             'TTL232R-3V3',
@@ -169,7 +170,7 @@ class HardwareMap:
 
     def __init__(self, env=None):
         self.detected = []
-        self.duts = []
+        self.duts: list[DUT] = []
         self.options = env.options
 
     def discover(self):
@@ -195,7 +196,7 @@ class HardwareMap:
                             self.options.platform.append(d.platform)
 
             elif self.options.device_serial:
-                self.add_device(self.options.device_serial,
+                self.add_device(self.options.device_serial[0],
                                 self.options.platform[0],
                                 self.options.pre_script,
                                 False,
@@ -204,6 +205,12 @@ class HardwareMap:
                                 flash_with_test=self.options.device_flash_with_test,
                                 flash_before=self.options.flash_before,
                                 )
+                if len(self.options.device_serial) > 1:
+                    for serial in self.options.device_serial[1:]:
+                        self.add_device(serial,
+                                        platform=None,
+                                        pre_script=None,
+                                        is_pty=False)
 
             elif self.options.device_serial_pty:
                 self.add_device(self.options.device_serial_pty,
@@ -212,7 +219,7 @@ class HardwareMap:
                                 True,
                                 flash_timeout=self.options.device_flash_timeout,
                                 flash_with_test=self.options.device_flash_with_test,
-                                flash_before=False,
+                                flash_before=self.options.flash_before,
                                 )
 
             # the fixtures given by twister command explicitly should be assigned to each DUT
@@ -275,7 +282,7 @@ class HardwareMap:
             serial_pty = dut.get('serial_pty')
             flash_before = dut.get('flash_before')
             if flash_before is None:
-                flash_before = self.options.flash_before and (not (flash_with_test or serial_pty))
+                flash_before = self.options.flash_before and (not flash_with_test)
             platform = dut.get('platform')
             if isinstance(platform, str):
                 platforms = platform.split()
@@ -353,6 +360,11 @@ class HardwareMap:
                 # TI XDS110 can have multiple serial devices for a single board
                 # assume endpoint 0 is the serial, skip all others
                 if d.manufacturer == 'Texas Instruments' and not d.location.endswith('0'):
+                    continue
+
+                # The Tigard multi-protocol debug tool provides multiple serial devices.
+                # Assume endpoint 0 is the UART, skip all others.
+                if d.manufacturer == 'SecuringHardware.com' and not d.location.endswith('0'):
                     continue
 
                 if d.product is None:

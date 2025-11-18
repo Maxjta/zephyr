@@ -9,6 +9,7 @@ toolchain:
 supported:
   - gpio
   - serial
+  - hwinfo
   - spi
   - i2c
   - trng
@@ -22,5 +23,6 @@ supported:
   - flash
   - usbd
   - memc
-ram: 1024
+  - can
+ram: 128
 flash: 3072

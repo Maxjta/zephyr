@@ -831,13 +831,17 @@ static void mcp2515_handle_interrupts(const struct device *dev)
 			mcp2515_tx_done(dev, 0, 0);
 		}
 
+#if MCP2515_TX_CNT > 1
 		if (canintf & MCP2515_CANINTF_TX1IF) {
 			mcp2515_tx_done(dev, 1, 0);
 		}
+#endif /* MCP2515_TX_CNT > 1 */
 
+#if MCP2515_TX_CNT > 2
 		if (canintf & MCP2515_CANINTF_TX2IF) {
 			mcp2515_tx_done(dev, 2, 0);
 		}
+#endif /* MCP2515_TX_CNT > 2 */
 
 		if (canintf & MCP2515_CANINTF_ERRIF) {
 			mcp2515_handle_errors(dev);
@@ -1005,7 +1009,7 @@ static int mcp2515_init(const struct device *dev)
                                                                                                    \
 	static const struct mcp2515_config mcp2515_config_##inst = {                               \
 		.common = CAN_DT_DRIVER_CONFIG_INST_GET(inst, 0, 1000000),                         \
-		.bus = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8), 0),                             \
+		.bus = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8)),                                \
 		.int_gpio = GPIO_DT_SPEC_INST_GET(inst, int_gpios),                                \
 		.int_thread_stack_size = CONFIG_CAN_MCP2515_INT_THREAD_STACK_SIZE,                 \
 		.int_thread_priority = CONFIG_CAN_MCP2515_INT_THREAD_PRIO,                         \

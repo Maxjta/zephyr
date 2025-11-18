@@ -282,6 +282,7 @@ static void started_cb(struct bt_bap_stream *stream)
 	test_stream->valid_rx_cnt = 0U;
 	test_stream->seq_num = 0U;
 	test_stream->tx_cnt = 0U;
+	UNSET_FLAG(test_stream->flag_audio_received);
 
 	printk("Stream %p started\n", stream);
 	k_sem_give(&sem_broadcast_started);
@@ -333,6 +334,7 @@ static void unicast_stream_started(struct bt_bap_stream *stream)
 	test_stream->valid_rx_cnt = 0U;
 	test_stream->seq_num = 0U;
 	test_stream->tx_cnt = 0U;
+	UNSET_FLAG(test_stream->flag_audio_received);
 
 	printk("Started stream %p\n", stream);
 
@@ -647,7 +649,7 @@ static int set_supported_contexts(void)
 	return 0;
 }
 
-void test_start_adv(void)
+static void test_start_adv(void)
 {
 	struct bt_le_ext_adv *ext_adv;
 
@@ -680,8 +682,7 @@ static void init(void)
 		.rank = 1,
 		.lockable = true,
 		/* Using the CSIP_SET_MEMBER test sample SIRK */
-		.sirk = { 0xcd, 0xcc, 0x72, 0xdd, 0x86, 0x8c, 0xcd, 0xce,
-			  0x22, 0xfd, 0xa1, 0x21, 0x09, 0x7d, 0x7d, 0x45 },
+		.sirk = TEST_SAMPLE_SIRK,
 	};
 	static const struct bt_audio_codec_cap codec_cap = BT_AUDIO_CODEC_CAP_LC3(
 		BT_AUDIO_CODEC_CAP_FREQ_ANY, BT_AUDIO_CODEC_CAP_DURATION_ANY,
@@ -797,7 +798,6 @@ static void init(void)
 		UNSET_FLAG(flag_base_received);
 		UNSET_FLAG(flag_pa_synced);
 		UNSET_FLAG(flag_pa_request);
-		UNSET_FLAG(flag_audio_received);
 		UNSET_FLAG(flag_base_metadata_updated);
 		UNSET_FLAG(flag_bis_sync_requested);
 
@@ -883,7 +883,11 @@ static void init(void)
 static void wait_for_data(void)
 {
 	printk("Waiting for data\n");
-	WAIT_FOR_FLAG(flag_audio_received);
+	ARRAY_FOR_EACH_PTR(broadcast_sink_streams, test_stream) {
+		if (audio_test_stream_is_streaming(test_stream)) {
+			WAIT_FOR_FLAG(test_stream->flag_audio_received);
+		}
+	}
 	printk("Data received\n");
 }
 

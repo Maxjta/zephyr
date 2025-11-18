@@ -11,6 +11,9 @@ zephyr_library_sources(
   thread.c
   vects.c
   isr_exit.S
+  fatal.c
+  reboot.c
+  nmi.c
 )
 
 zephyr_library_sources_ifdef(CONFIG_IRQ_OFFLOAD irq_offload.c)

@@ -21,6 +21,8 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #include <zephyr/init.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_pkt.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
 
 #if defined(CONFIG_NET_L2_OPENTHREAD)
 #include <zephyr/net/openthread.h>
@@ -63,6 +65,13 @@ static uint16_t rf_compute_csl_phase(uint32_t aTimeUs);
 #define stop_csl_receiver()
 #endif /* CONFIG_IEEE802154_CSL_ENDPOINT */
 
+/* Hardware parameters partition and offsets */
+#define HW_PARAMS_PARTITION_ID FIXED_PARTITION_ID(hw_params_partition)
+#define MAC_ADDRESS_OFFSET     0x00
+#define MAC_ADDRESS_LEN        8
+
+static uint8_t g_eui64[MAC_ADDRESS_LEN];
+
 static volatile uint32_t sun_rx_mode = RX_ON_IDLE_START;
 
 /* Private functions */
@@ -95,14 +104,127 @@ WEAK void app_disallow_device_to_slepp(void)
 {
 }
 
+static const struct flash_area *open_hw_params_partition(void)
+{
+	const struct flash_area *fa = NULL;
+	int ret = flash_area_open(HW_PARAMS_PARTITION_ID, &fa);
+
+	if (ret != 0) {
+		LOG_ERR("Failed to open the HW parameters flash partition: %d", ret);
+		return NULL;
+	}
+
+	return fa;
+}
+
+static int read_mac_from_flash(const struct flash_area *fa, uint8_t *mac_addr)
+{
+	int ret = flash_area_read(fa, MAC_ADDRESS_OFFSET, mac_addr, MAC_ADDRESS_LEN);
+
+	if (ret != 0) {
+		LOG_ERR("Failed to read MAC from the HW parameters flash: %d", ret);
+		return ret;
+	}
+
+	LOG_HEXDUMP_INF(mac_addr, MAC_ADDRESS_LEN,
+			"Loaded MAC address from the HW parameters flash:");
+	return 0;
+}
+
+static bool is_mac_address_valid(const uint8_t *mac_addr)
+{
+	bool is_all_zero = true;
+	bool is_all_ff = true;
+
+	for (int i = 0; i < MAC_ADDRESS_LEN; i++) {
+		if (mac_addr[i] != 0x00) {
+			is_all_zero = false;
+		}
+		if (mac_addr[i] != 0xFF) {
+			is_all_ff = false;
+		}
+	}
+
+	/* Invalid if: all zeros, all 0xFF, or multicast (bit 0 = 1) */
+	return !(is_all_zero || is_all_ff || (mac_addr[0] & 0x01) != 0);
+}
+
+static void generate_new_mac_address(uint8_t *mac_addr)
+{
+	/* Use NXP OUI (00:60:37) */
+	mac_addr[0] = 0x00;
+	mac_addr[1] = 0x60;
+	mac_addr[2] = 0x37;
+
+	/* Generate random bytes for remaining 5 bytes */
+	sys_rand_get(&mac_addr[3], MAC_ADDRESS_LEN - 3);
+}
+
+static int save_mac_to_flash(const struct flash_area *fa, const uint8_t *mac_addr)
+{
+	int ret = flash_area_erase(fa, MAC_ADDRESS_OFFSET, fa->fa_size);
+
+	if (ret != 0) {
+		LOG_ERR("Failed to erase HW parameters flash area: %d", ret);
+		return ret;
+	}
+
+	ret = flash_area_write(fa, MAC_ADDRESS_OFFSET, mac_addr, MAC_ADDRESS_LEN);
+	if (ret != 0) {
+		LOG_ERR("Failed to write MAC address to HW parameters flash: %d", ret);
+		return ret;
+	}
+
+	LOG_HEXDUMP_INF(mac_addr, MAC_ADDRESS_LEN,
+			"MAC address saved to the HW parameters flash successfully:");
+	return 0;
+}
+
 void mcxw_get_eui64(uint8_t *eui64)
 {
+	const struct flash_area *fa = NULL;
+	bool force_regenerate = false;
+
 	__ASSERT_NO_MSG(eui64);
 
-	/* PLATFORM_GetIeee802_15_4Addr(); */
-	sys_rand_get(eui64, sizeof(mcxw_ctx.mac));
+	/* Initialize g_eui64 to ensure clean state */
+	memset(g_eui64, 0, MAC_ADDRESS_LEN);
 
-	eui64[0] = (eui64[0] & ~0x01) | 0x02;
+	/* Open HW parameters flash partition */
+	fa = open_hw_params_partition();
+	if (fa == NULL) {
+		force_regenerate = true;
+	} else {
+		/* Try to read MAC address from flash */
+		if (read_mac_from_flash(fa, g_eui64) != 0) {
+			force_regenerate = true;
+		} else {
+			/* Check if loaded MAC is valid */
+			if (!is_mac_address_valid(g_eui64)) {
+				LOG_INF("Invalid MAC address detected, will regenerate");
+				force_regenerate = true;
+			}
+		}
+	}
+
+	/* Generate new MAC if needed */
+	if (force_regenerate) {
+		LOG_INF("Generating new MAC address");
+		generate_new_mac_address(g_eui64);
+
+		/* Save to flash if possible */
+		if (fa != NULL) {
+			save_mac_to_flash(fa, g_eui64);
+		}
+	}
+
+	/* Close partition and provide the address */
+	if (fa != NULL) {
+		flash_area_close(fa);
+	}
+
+	/* Always provide a valid address */
+	memcpy(eui64, g_eui64, MAC_ADDRESS_LEN);
 }
 
 static int mcxw_set_pan_id(const struct device *dev, uint16_t aPanId)
@@ -313,7 +435,7 @@ static int handle_ack(struct mcxw_context *mcxw_radio)
 	int err = 0;
 
 	len = mcxw_radio->rx_ack_frame.length;
-	pkt = net_pkt_rx_alloc_with_buffer(mcxw_radio->iface, len, AF_UNSPEC, 0, K_NO_WAIT);
+	pkt = net_pkt_rx_alloc_with_buffer(mcxw_radio->iface, len, NET_AF_UNSPEC, 0, K_NO_WAIT);
 	if (!pkt) {
 		LOG_ERR("No free packet available.");
 		err = -ENOMEM;
@@ -326,9 +448,8 @@ static int handle_ack(struct mcxw_context *mcxw_radio)
 		goto free_ack;
 	}
 
-	/* Use some fake values for LQI and RSSI. */
-	net_pkt_set_ieee802154_lqi(pkt, 80);
-	net_pkt_set_ieee802154_rssi_dbm(pkt, -40);
+	net_pkt_set_ieee802154_lqi(pkt, mcxw_radio->rx_ack_frame.lqi);
+	net_pkt_set_ieee802154_rssi_dbm(pkt, mcxw_radio->rx_ack_frame.rssi);
 
 	net_pkt_set_timestamp_ns(pkt, mcxw_radio->rx_ack_frame.timestamp);
 
@@ -377,7 +498,6 @@ static int mcxw_tx(const struct device *dev, enum ieee802154_tx_mode mode, struc
 	rf_set_channel(mcxw_radio->channel);
 
 	msg->msgType = gPdDataReq_c;
-	msg->msgData.dataReq.slottedTx = gPhyUnslottedMode_c;
 	msg->msgData.dataReq.psduLength = mcxw_radio->tx_frame.length;
 	msg->msgData.dataReq.CCABeforeTx = gPhyNoCCABeforeTx_c;
 	msg->msgData.dataReq.startTime = gPhySeqStartAsap_c;
@@ -458,14 +578,14 @@ static int mcxw_tx(const struct device *dev, enum ieee802154_tx_mode mode, struc
 					msg->msgData.dataReq.startTime =
 						PhyTime_ReadClock() + TX_ENCRYPT_DELAY_SYM;
 
-					hdr_time_us = mcxw_get_time(NULL) +
-						    (TX_ENCRYPT_DELAY_SYM +
-						     IEEE802154_PHY_SHR_LEN_SYM) *
-							    IEEE802154_SYMBOL_TIME_US;
+					hdr_time_us = (mcxw_get_time(NULL) / NSEC_PER_USEC) +
+						      (TX_ENCRYPT_DELAY_SYM +
+						       IEEE802154_PHY_SHR_LEN_SYM) *
+							      IEEE802154_SYMBOL_TIME_US;
 					set_csl_ie(mcxw_radio->tx_frame.psdu,
-						 mcxw_radio->tx_frame.length,
-						 mcxw_radio->csl_period,
-						 rf_compute_csl_phase(hdr_time_us));
+						   mcxw_radio->tx_frame.length,
+						   mcxw_radio->csl_period,
+						   rf_compute_csl_phase(hdr_time_us));
 				}
 #endif /* CONFIG_IEEE802154_CSL_ENDPOINT */
 			}
@@ -521,8 +641,8 @@ void mcxw_rx_thread(void *arg1, void *arg2, void *arg3)
 			continue;
 		}
 
-		pkt = net_pkt_rx_alloc_with_buffer(mcxw_radio->iface, rx_frame.length, AF_UNSPEC, 0,
-						   K_FOREVER);
+		pkt = net_pkt_rx_alloc_with_buffer(mcxw_radio->iface, rx_frame.length,
+						   NET_AF_UNSPEC, 0, K_FOREVER);
 
 		if (net_pkt_write(pkt, rx_frame.psdu, rx_frame.length)) {
 			goto drop;
@@ -748,12 +868,12 @@ static void set_csl_sample_time(void)
 
 	macToPlmeMessage_t msg;
 	uint32_t csl_period = mcxw_ctx.csl_period * 10 * IEEE802154_SYMBOL_TIME_US;
-	uint32_t dt = mcxw_ctx.csl_sample_time - (uint32_t)mcxw_get_time(NULL);
+	uint32_t dt = mcxw_ctx.csl_sample_time - (uint32_t)(mcxw_get_time(NULL) / NSEC_PER_USEC);
 
 	/* next channel sample should be in the future */
 	while ((dt <= CMP_OVHD) || (dt > (CMP_OVHD + 2 * csl_period))) {
 		mcxw_ctx.csl_sample_time += csl_period;
-		dt = mcxw_ctx.csl_sample_time - (uint32_t)mcxw_get_time(NULL);
+		dt = mcxw_ctx.csl_sample_time - (uint32_t)(mcxw_get_time(NULL) / NSEC_PER_USEC);
 	}
 
 	/* The CSL sample time is in microseconds and PHY function expects also microseconds */
@@ -808,9 +928,9 @@ static uint16_t rf_compute_csl_phase(uint32_t time_us)
 {
 	/* convert CSL Period in microseconds - it was given in 10 symbols */
 	uint32_t csl_period_us = mcxw_ctx.csl_period * 10 * IEEE802154_SYMBOL_TIME_US;
-	uint32_t csl_phase_us =
-		(csl_period_us - (time_us % csl_period_us) +
-		(mcxw_ctx.csl_sample_time % csl_period_us)) % csl_period_us;
+	uint32_t csl_phase_us = (csl_period_us - (time_us % csl_period_us) +
+				 (mcxw_ctx.csl_sample_time % csl_period_us)) %
+				csl_period_us;
 
 	return (uint16_t)(csl_phase_us / (10 * IEEE802154_SYMBOL_TIME_US) + 1);
 }
@@ -920,7 +1040,7 @@ static net_time_t mcxw_get_time(const struct device *dev)
 
 	irq_unlock(key);
 
-	return (net_time_t)sw_timestamp;
+	return (net_time_t)sw_timestamp * NSEC_PER_USEC;
 }
 
 static void rf_set_tx_power(int8_t tx_power)
@@ -945,7 +1065,7 @@ static uint64_t rf_adjust_tstamp_from_phy(uint64_t ts)
 	delta = (now >= ts) ? (now - ts) : ((PHY_TMR_MAX_VALUE + now) - ts);
 	delta *= IEEE802154_SYMBOL_TIME_US;
 
-	return mcxw_get_time(NULL) - delta;
+	return (mcxw_get_time(NULL) / NSEC_PER_USEC) - delta;
 }
 
 #if CONFIG_IEEE802154_CSL_ENDPOINT || CONFIG_NET_PKT_TXTIME
@@ -953,7 +1073,7 @@ static uint32_t rf_adjust_tstamp_from_app(uint32_t time)
 {
 	/* The phy timestamp is in symbols so we need to convert it to microseconds */
 	uint64_t ts = PhyTime_ReadClock() * IEEE802154_SYMBOL_TIME_US;
-	uint32_t delta = time - (uint32_t)mcxw_get_time(NULL);
+	uint32_t delta = time - (uint32_t)(mcxw_get_time(NULL) / NSEC_PER_USEC);
 
 	return (uint32_t)(ts + delta);
 }
@@ -977,7 +1097,7 @@ phyStatus_t pd_mac_sap_handler(void *msg, instanceId_t instance)
 		if (is_keyid_mode_1(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length) &&
 		    !mcxw_ctx.tx_frame.sec_processed && !mcxw_ctx.tx_frame.hdr_updated) {
 			set_frame_counter(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length,
-					data_msg->fc);
+					  data_msg->fc);
 			mcxw_ctx.tx_frame.hdr_updated = true;
 		}
 #endif
@@ -988,6 +1108,8 @@ phyStatus_t pd_mac_sap_handler(void *msg, instanceId_t instance)
 
 		mcxw_ctx.rx_ack_frame.channel = mcxw_ctx.channel;
 		mcxw_ctx.rx_ack_frame.length = data_msg->msgData.dataCnf.ackLength;
+		mcxw_ctx.rx_ack_frame.lqi = data_msg->msgData.dataCnf.ppduLinkQuality;
+		mcxw_ctx.rx_ack_frame.rssi = data_msg->msgData.dataCnf.ppduRssi;
 		mcxw_ctx.rx_ack_frame.timestamp = data_msg->msgData.dataCnf.timeStamp;
 		memcpy(mcxw_ctx.rx_ack_frame.psdu, data_msg->msgData.dataCnf.ackData,
 		       mcxw_ctx.rx_ack_frame.length);
@@ -1074,7 +1196,7 @@ phyStatus_t plme_mac_sap_handler(void *msg, instanceId_t instance)
 			if (is_keyid_mode_1(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length) &&
 			    !mcxw_ctx.tx_frame.sec_processed && !mcxw_ctx.tx_frame.hdr_updated) {
 				set_frame_counter(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length,
-						plme_msg->fc);
+						  plme_msg->fc);
 				mcxw_ctx.tx_frame.hdr_updated = true;
 			}
 #endif
@@ -1098,7 +1220,7 @@ phyStatus_t plme_mac_sap_handler(void *msg, instanceId_t instance)
 		if (is_keyid_mode_1(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length) &&
 		    !mcxw_ctx.tx_frame.sec_processed && !mcxw_ctx.tx_frame.hdr_updated) {
 			set_frame_counter(mcxw_ctx.tx_frame.psdu, mcxw_ctx.tx_frame.length,
-					plme_msg->fc);
+					  plme_msg->fc);
 			mcxw_ctx.tx_frame.hdr_updated = true;
 		}
 #endif
@@ -1253,6 +1375,12 @@ static int mcxw_init(const struct device *dev)
 	msg.msgType = gPlmeEnableEncryption_c;
 	(void)MAC_PLME_SapHandler(&msg, ot_phy_ctx);
 
+	/* Disable poll optimization */
+	msg.msgType = gPlmeSetReq_c;
+	msg.msgData.setReq.PibAttribute = gPhyPibRxTimePoll_c;
+	msg.msgData.setReq.PibAttributeValue = 0;
+	(void)MAC_PLME_SapHandler(&msg, ot_phy_ctx);
+
 	mcxw_radio->state = RADIO_STATE_DISABLED;
 	mcxw_radio->energy_scan_done = NULL;
 
@@ -1354,9 +1482,8 @@ static const struct ieee802154_radio_api mcxw71_radio_api = {
 
 #if defined(CONFIG_NET_L2_PHY_IEEE802154)
 NET_DEVICE_DT_INST_DEFINE(0, mcxw_init, NULL, &mcxw_ctx, NULL, CONFIG_IEEE802154_MCXW_INIT_PRIO,
-	&mcxw71_radio_api, L2, L2_CTX_TYPE, MTU);
+			  &mcxw71_radio_api, L2, L2_CTX_TYPE, MTU);
 #else
-DEVICE_DT_INST_DEFINE(0, mcxw_init, NULL, &mcxw_ctx, NULL,
-			POST_KERNEL, CONFIG_IEEE802154_MCXW_INIT_PRIO,
-			&mcxw71_radio_api);
+DEVICE_DT_INST_DEFINE(0, mcxw_init, NULL, &mcxw_ctx, NULL, POST_KERNEL,
+		      CONFIG_IEEE802154_MCXW_INIT_PRIO, &mcxw71_radio_api);
 #endif

@@ -5,6 +5,7 @@
  */
 
 #include <soc.h>
+#include <stm32_bitops.h>
 
 #include <stm32_ll_bus.h>
 #include <stm32_ll_pwr.h>
@@ -16,6 +17,9 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/sys/util.h>
+
+/** Offset between RCC_MP_xxxENSETR and RCC_MP_xxxENCLRR registers */
+#define RCC_CLR_OFFSET		0x4
 
 /** @brief Verifies clock is part of active clock configuration */
 int enabled_clock(uint32_t src_clk)
@@ -52,7 +56,8 @@ static int stm32_clock_control_on(const struct device *dev, clock_control_subsys
 		return -ENOTSUP;
 	}
 
-	sys_set_bits(DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus, pclken->enr);
+	/* STM32MP13 has EN_SET registers - no need for RMW */
+	sys_write32(pclken->enr, DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus);
 	/* Ensure that the write operation is completed */
 	temp = sys_read32(DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus);
 	UNUSED(temp);
@@ -72,9 +77,10 @@ static int stm32_clock_control_off(const struct device *dev, clock_control_subsy
 		return -ENOTSUP;
 	}
 
-	sys_clear_bits(DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus, pclken->enr);
+	/* STM32MP13 has EN_CLR register at pclken->bus + RCC_CLR_OFFSET - no need for RMW */
+	sys_write32(pclken->enr, DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus + RCC_CLR_OFFSET);
 	/* Ensure that the write operation is completed */
-	temp = sys_read32(DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus);
+	temp = sys_read32(DT_REG_ADDR(DT_NODELABEL(rcc)) + pclken->bus + RCC_CLR_OFFSET);
 	UNUSED(temp);
 
 	return 0;
@@ -231,19 +237,20 @@ static int stm32_clock_control_init(const struct device *dev)
 	/* while active.*/
 
 	LL_RCC_SetMPUClkSource(LL_RCC_MPU_CLKSOURCE_HSE);
-	while ((READ_BIT(RCC->MPCKSELR, RCC_MPCKSELR_MPUSRCRDY) != RCC_MPCKSELR_MPUSRCRDY)) {
+	while (stm32_reg_read_bits(&RCC->MPCKSELR, RCC_MPCKSELR_MPUSRCRDY) !=
+	       RCC_MPCKSELR_MPUSRCRDY) {
 	}
 
-	CLEAR_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVPEN);
-	while (READ_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVPEN) == RCC_PLL1CR_DIVPEN) {
+	stm32_reg_clear_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVPEN);
+	while (stm32_reg_read_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVPEN) == RCC_PLL1CR_DIVPEN) {
 	};
 
-	CLEAR_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVQEN);
-	while (READ_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVQEN) == RCC_PLL1CR_DIVQEN) {
+	stm32_reg_clear_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVQEN);
+	while (stm32_reg_read_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVQEN) == RCC_PLL1CR_DIVQEN) {
 	};
 
-	CLEAR_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVREN);
-	while (READ_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVREN) == RCC_PLL1CR_DIVREN) {
+	stm32_reg_clear_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVREN);
+	while (stm32_reg_read_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVREN) == RCC_PLL1CR_DIVREN) {
 	};
 
 	uint32_t pll1_n = DT_PROP(DT_NODELABEL(pll1), mul_n);
@@ -268,8 +275,8 @@ static int stm32_clock_control_init(const struct device *dev)
 	while (LL_RCC_PLL1_IsReady() != 1) {
 	}
 
-	SET_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVPEN);
-	while (READ_BIT(RCC->PLL1CR, RCC_PLL1CR_DIVPEN) != RCC_PLL1CR_DIVPEN) {
+	stm32_reg_set_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVPEN);
+	while (stm32_reg_read_bits(&RCC->PLL1CR, RCC_PLL1CR_DIVPEN) != RCC_PLL1CR_DIVPEN) {
 	};
 
 	LL_RCC_SetMPUClkSource(LL_RCC_MPU_CLKSOURCE_PLL1);

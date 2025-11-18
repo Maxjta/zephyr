@@ -414,7 +414,7 @@ static struct net_pkt *eth_nxp_s32_get_pkt(const struct device *dev,
 
 	/* Using root iface, it will be updated in net_recv_data() */
 	pkt = net_pkt_rx_alloc_with_buffer(ctx->iface, rx_info->PktLen,
-					   AF_UNSPEC, 0, ETH_NXP_S32_BUF_TIMEOUT);
+					   NET_AF_UNSPEC, 0, ETH_NXP_S32_BUF_TIMEOUT);
 	if (!pkt) {
 		LOG_ERR("Failed to allocate rx buffer of length %u", rx_info->PktLen);
 		goto exit;
@@ -564,7 +564,6 @@ static enum ethernet_hw_caps eth_nxp_s32_get_capabilities(const struct device *d
 #if (FEATURE_GMAC_RGMII_EN == 1U)
 		| ETHERNET_LINK_1000BASE
 #endif
-		| ETHERNET_DUPLEX_SET
 		| ETHERNET_HW_TX_CHKSUM_OFFLOAD
 		| ETHERNET_HW_RX_CHKSUM_OFFLOAD
 #if defined(CONFIG_NET_VLAN)

@@ -215,7 +215,7 @@ static struct net_pkt *prepare_pkt(struct eth_context *ctx,
 	struct net_pkt *pkt;
 
 	pkt = net_pkt_rx_alloc_with_buffer(ctx->iface, count,
-					   AF_UNSPEC, 0, NET_BUF_TIMEOUT);
+					   NET_AF_UNSPEC, 0, NET_BUF_TIMEOUT);
 	if (!pkt) {
 		*status = -ENOMEM;
 		return NULL;
@@ -400,7 +400,7 @@ static void eth_iface_init(struct net_if *iface)
 	}
 #endif
 
-	ctx->dev_fd = eth_iface_create(CONFIG_ETH_NATIVE_POSIX_DEV_NAME, ctx->if_name, false);
+	ctx->dev_fd = eth_iface_create(CONFIG_ETH_NATIVE_TAP_DEV_NAME, ctx->if_name, false);
 	if (ctx->dev_fd < 0) {
 		LOG_ERR("Cannot create %s (%d/%s)", ctx->if_name, ctx->dev_fd,
 			strerror(-ctx->dev_fd));

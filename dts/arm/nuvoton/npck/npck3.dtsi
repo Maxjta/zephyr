@@ -50,6 +50,7 @@
 			clocks = <&pcc NPCX_CLOCK_BUS_LFCLK NPCX_PWDWN_CTL4 0
 				  &pcc NPCX_CLOCK_BUS_APB2 NPCX_PWDWN_CTL2 6>;
 			interrupts = <29 1>; /* Event timer interrupt */
+			clock-frequency = <15000000>; /* Set for SYS_CLOCK_HW_CYCLES_PER_SEC */
 		};
 
 		uart1: serial@400c4000 {
@@ -250,8 +251,12 @@
 		espi0: espi@4000a000 {
 			rx-plsize = <64>;
 			tx-plsize = <64>;
+
+			rst-gpios = <&gpio1 0 0>;
+
 			#address-cells = <1>;
 			#size-cells = <1>;
+
 			espi_taf: espitaf@4000a000 {
 				compatible = "nuvoton,npcx-espi-taf";
 				reg = <0x4000a000 0x2000>,
@@ -259,6 +264,16 @@
 				reg-names = "saf", "fiu1";
 				status = "disabled";
 			};
+		};
+
+		lct0: lct@400dd000 {
+			compatible = "nuvoton,npck-lct";
+			reg = <0x400dd000 0x10>;
+			interrupts = <17 4>;
+			/* The maximum counter value is (16 weeks - 1 second) */
+			maximum-cnt-in-sec = <9676799>;
+			pwr-by-vsby;
+			status = "disabled";
 		};
 	};
 

@@ -2,6 +2,7 @@
  * Copyright (c) 2018 Intel Corporation.
  * Copyright (c) 2021 Nordic Semiconductor ASA.
  * Copyright (c) 2025 HubbleNetwork.
+ * Copyright (c) 2025 NXP.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -103,6 +104,12 @@ static int runtime_suspend(const struct device *dev, bool async,
 		}
 
 		pm->base.state = PM_DEVICE_STATE_SUSPENDED;
+
+		/* Now put the domain */
+		if (atomic_test_bit(&dev->pm_base->flags, PM_DEVICE_FLAG_PD_CLAIMED)) {
+			(void)pm_device_runtime_put(PM_DOMAIN(dev->pm_base));
+			atomic_clear_bit(&dev->pm_base->flags, PM_DEVICE_FLAG_PD_CLAIMED);
+		}
 	}
 
 unlock:
@@ -139,6 +146,7 @@ static void runtime_suspend_work(struct k_work *work)
 	if ((ret == 0) &&
 	    atomic_test_bit(&pm->base.flags, PM_DEVICE_FLAG_PD_CLAIMED)) {
 		(void)pm_device_runtime_put(PM_DOMAIN(&pm->base));
+		atomic_clear_bit(&pm->base.flags, PM_DEVICE_FLAG_PD_CLAIMED);
 	}
 
 	__ASSERT(ret == 0, "Could not suspend device (%d)", ret);
@@ -152,16 +160,20 @@ static int get_sync_locked(const struct device *dev)
 	uint32_t flags = pm->base.flags;
 
 	if (pm->base.usage == 0) {
-		if (flags & BIT(PM_DEVICE_FLAG_PD_CLAIMED)) {
+		if ((flags & BIT(PM_DEVICE_FLAG_PD_CLAIMED)) == 0) {
 			const struct device *domain = PM_DOMAIN(&pm->base);
 
-			if (domain->pm_base->flags & BIT(PM_DEVICE_FLAG_ISR_SAFE)) {
-				ret = pm_device_runtime_get(domain);
-				if (ret < 0) {
-					return ret;
+			if (domain != NULL) {
+				if ((domain->pm_base->flags & BIT(PM_DEVICE_FLAG_ISR_SAFE)) != 0) {
+					ret = pm_device_runtime_get(domain);
+					if (ret < 0) {
+						return ret;
+					}
+					/* Power domain successfully claimed */
+					pm->base.flags |= BIT(PM_DEVICE_FLAG_PD_CLAIMED);
+				} else {
+					return -EWOULDBLOCK;
 				}
-			} else {
-				return -EWOULDBLOCK;
 			}
 		}
 
@@ -224,7 +236,7 @@ int pm_device_runtime_get(const struct device *dev)
 	 */
 	const struct device *domain = PM_DOMAIN(&pm->base);
 
-	if (domain != NULL) {
+	if (domain != NULL && !atomic_test_bit(&dev->pm_base->flags, PM_DEVICE_FLAG_PD_CLAIMED)) {
 		ret = pm_device_runtime_get(domain);
 		if (ret != 0) {
 			goto unlock;
@@ -276,6 +288,9 @@ int pm_device_runtime_get(const struct device *dev)
 	ret = pm->base.action_cb(pm->dev, PM_DEVICE_ACTION_RESUME);
 	if (ret < 0) {
 		pm->base.usage--;
+		if (domain != NULL) {
+			(void)pm_device_runtime_put(domain);
+		}
 		goto unlock;
 	}
 
@@ -311,6 +326,7 @@ static int put_sync_locked(const struct device *dev)
 	if (pm->base.usage == 0U) {
 		ret = pm->base.action_cb(dev, PM_DEVICE_ACTION_SUSPEND);
 		if (ret < 0) {
+			pm->base.usage++;
 			return ret;
 		}
 		pm->base.state = PM_DEVICE_STATE_SUSPENDED;
@@ -320,6 +336,7 @@ static int put_sync_locked(const struct device *dev)
 
 			if (domain->pm_base->flags & BIT(PM_DEVICE_FLAG_ISR_SAFE)) {
 				ret = put_sync_locked(domain);
+				pm->base.flags &= ~BIT(PM_DEVICE_FLAG_PD_CLAIMED);
 			} else {
 				ret = -EWOULDBLOCK;
 			}
@@ -350,14 +367,6 @@ int pm_device_runtime_put(const struct device *dev)
 		k_spin_unlock(&pm_sync->lock, k);
 	} else {
 		ret = runtime_suspend(dev, false, K_NO_WAIT);
-
-		/*
-		 * Now put the domain
-		 */
-		if ((ret == 0) &&
-		    atomic_test_bit(&dev->pm_base->flags, PM_DEVICE_FLAG_PD_CLAIMED)) {
-			ret = pm_device_runtime_put(PM_DOMAIN(dev->pm_base));
-		}
 	}
 	SYS_PORT_TRACING_FUNC_EXIT(pm, device_runtime_put, dev, ret);
 
@@ -398,10 +407,15 @@ int pm_device_runtime_auto_enable(const struct device *dev)
 {
 	struct pm_device_base *pm = dev->pm_base;
 
-	/* No action needed if PM_DEVICE_FLAG_RUNTIME_AUTO is not enabled */
-	if (!pm || !atomic_test_bit(&pm->flags, PM_DEVICE_FLAG_RUNTIME_AUTO)) {
+	if (!pm) {
 		return 0;
 	}
+
+	if (!IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME_DEFAULT_ENABLE) &&
+	    !atomic_test_bit(&pm->flags, PM_DEVICE_FLAG_RUNTIME_AUTO)) {
+		return 0;
+	}
+
 	return pm_device_runtime_enable(dev);
 }
 

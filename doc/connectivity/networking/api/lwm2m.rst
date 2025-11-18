@@ -13,7 +13,7 @@ Overview
 Lightweight Machine to Machine (LwM2M) is an application layer protocol
 designed with device management, data reporting and device actuation in mind.
 Based on CoAP/UDP, `LwM2M`_ is a
-`standard <http://openmobilealliance.org/release/LightweightM2M/>`_ defined by
+`standard <https://openmobilealliance.org/release/LightweightM2M/>`_ defined by
 the Open Mobile Alliance and suitable for constrained devices by its use of
 CoAP packet-size optimization and a simple, stateless flow that supports a
 REST API.
@@ -225,7 +225,7 @@ instance 0 (the default and only instance) by sending a ``READ 3/0/0``
 operation to the client.
 
 The full list of registered objects and resource IDs can be found in the
-`LwM2M registry`_.
+`OMA LwM2M registries`_.
 
 Zephyr's LwM2M library lives in the :zephyr_file:`subsys/net/lib/lwm2m`, with a
 client sample in :zephyr_file:`samples/net/lwm2m_client`.  For more information
@@ -244,7 +244,8 @@ The Zephyr LwM2M library implements the following items:
 By default, the library implements `LwM2M specification 1.0.2`_ and can be set to
 `LwM2M specification 1.1.1`_ with a Kconfig option.
 
-For more information about LwM2M visit `OMA Specworks LwM2M`_.
+For more information about LwM2M specification releases visit the
+`OMA LwM2M releases`_ page.
 
 Sample usage
 ************
@@ -515,6 +516,10 @@ must be enabled separately and each resource needs their own storage.
   lwm2m_enable_cache(LWM2M_OBJ(IPSO_OBJECT_TEMP_SENSOR_ID, 0, SENSOR_VALUE_RID),
           temperature_cache, ARRAY_SIZE(temperature_cache));
 
+Applications can inspect the available space in a cached resource with
+:c:func:`lwm2m_cache_free_slots_get`, which returns the number of samples that
+can still be stored or a negative errno value if the query fails.
+
 LwM2M engine have room for four resources that have cache enabled. Limit can be increased by
 changing :kconfig:option:`CONFIG_LWM2M_MAX_CACHED_RESOURCES`. This affects a static memory usage of
 engine.
@@ -531,9 +536,9 @@ Read and Write operations
 Full content of data cache is written into a payload when any READ, SEND or NOTIFY operation
 internally reads the content of a given resource. This has a side effect that any read callbacks
 registered for a that resource are ignored when cache is enabled.
-Data is written into a cache when any of the ``lwm2m_set_*`` functions are called. To filter
-the data entering the cache, application may register a validation callback using
-:c:func:`lwm2m_register_validate_callback`.
+Data is written into a cache when any of the ``lwm2m_set_*`` functions are called. Applications can
+register a cache filter callback with :c:func:`lwm2m_set_cache_filter` to drop otherwise valid samples
+based on application-specific rules.
 
 Limitations
 ===========
@@ -804,16 +809,16 @@ API Reference
 .. doxygengroup:: lwm2m_api
 
 .. _LwM2M:
-   https://www.omaspecworks.org/what-is-oma-specworks/iot/lightweight-m2m-lwm2m/
+   https://www.openmobilealliance.org/specifications/lwm2m
 
-.. _LwM2M registry:
-   http://www.openmobilealliance.org/wp/OMNA/LwM2M/LwM2MRegistry.html
+.. _OMA LwM2M registries:
+   https://www.openmobilealliance.org/specifications/registries
 
-.. _OMA Specworks LwM2M:
-   https://www.omaspecworks.org/what-is-oma-specworks/iot/lightweight-m2m-lwm2m/
+.. _OMA LwM2M releases:
+   https://www.openmobilealliance.org/specifications/lwm2m/releases
 
 .. _LwM2M specification 1.0.2:
-   http://openmobilealliance.org/release/LightweightM2M/V1_0_2-20180209-A/OMA-TS-LightweightM2M-V1_0_2-20180209-A.pdf
+   https://www.openmobilealliance.org/release/LightweightM2M/V1_0_2-20180209-A/OMA-TS-LightweightM2M-V1_0_2-20180209-A.pdf
 
 .. _LwM2M specification 1.1.1:
-   http://openmobilealliance.org/release/LightweightM2M/V1_1_1-20190617-A/
+   https://www.openmobilealliance.org/release/LightweightM2M/V1_1_1-20190617-A/

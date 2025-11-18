@@ -787,8 +787,7 @@ static DEVICE_API(adc, max1125x_api) = {
 #define MAX1125X_INIT(t, n, odr_delay_us, res, mux, pgab)                                          \
 	static const struct max1125x_config max##t##_cfg_##n = {                                   \
 		.bus = SPI_DT_SPEC_GET(DT_INST_MAX1125X(n, t),                                     \
-				       SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_TRANSFER_MSB,    \
-				       1),                                                         \
+				       SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_TRANSFER_MSB),   \
 		.odr_delay = odr_delay_us,                                                         \
 		.resolution = res,                                                                 \
 		.multiplexer = mux,                                                                \
@@ -799,7 +798,7 @@ static DEVICE_API(adc, max1125x_api) = {
 		.gpio.gpio1_enable = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpio1_enable, 0),          \
 		.gpio.gpio0_direction = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpio0_direction, 0),    \
 		.gpio.gpio1_direction = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpio1_direction, 0),    \
-		.gpo.gpo0_enable = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpo1_enable, 0),             \
+		.gpo.gpo0_enable = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpo0_enable, 0),             \
 		.gpo.gpo1_enable = DT_PROP_OR(DT_INST_MAX1125X(n, t), gpo1_enable, 0),             \
 	};                                                                                         \
 	static struct max1125x_data max##t##_data_##n = {                                          \

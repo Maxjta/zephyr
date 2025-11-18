@@ -13,9 +13,11 @@ LOG_MODULE_REGISTER(esp32_wifi, CONFIG_WIFI_LOG_LEVEL);
 #include <zephyr/net/net_pkt.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/wifi_mgmt.h>
+#if defined(CONFIG_NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT)
+#include <zephyr/net/conn_mgr/connectivity_wifi_mgmt.h>
+#endif
 #if defined(CONFIG_ESP32_WIFI_AP_STA_MODE)
 #include <zephyr/net/wifi_nm.h>
-#include <zephyr/net/conn_mgr/connectivity_wifi_mgmt.h>
 #endif
 #include <zephyr/device.h>
 #include <soc.h>
@@ -77,7 +79,7 @@ struct esp32_wifi_runtime {
 
 static struct net_mgmt_event_callback esp32_dhcp_cb;
 
-static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void wifi_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			       struct net_if *iface)
 {
 	switch (mgmt_event) {
@@ -136,7 +138,7 @@ static esp_err_t eth_esp32_rx(void *buffer, uint16_t len, void *eb)
 		return -EIO;
 	}
 
-	pkt = net_pkt_rx_alloc_with_buffer(esp32_wifi_iface, len, AF_UNSPEC, 0, K_MSEC(100));
+	pkt = net_pkt_rx_alloc_with_buffer(esp32_wifi_iface, len, NET_AF_UNSPEC, 0, K_MSEC(100));
 	if (!pkt) {
 		LOG_ERR("Failed to allocate net buffer");
 		esp_wifi_internal_free_rx_buffer(eb);
@@ -183,7 +185,8 @@ static esp_err_t wifi_esp32_ap_iface_rx(void *buffer, uint16_t len, void *eb)
 		return -EIO;
 	}
 
-	pkt = net_pkt_rx_alloc_with_buffer(esp32_wifi_iface_ap, len, AF_UNSPEC, 0, K_MSEC(100));
+	pkt = net_pkt_rx_alloc_with_buffer(esp32_wifi_iface_ap, len,
+					   NET_AF_UNSPEC, 0, K_MSEC(100));
 	if (!pkt) {
 		esp_wifi_internal_free_rx_buffer(eb);
 		LOG_ERR("Failed to get net buffer");
@@ -770,8 +773,10 @@ static int esp32_wifi_status(const struct device *dev, struct wifi_iface_status 
 	}
 
 	strncpy(status->ssid, data->status.ssid, WIFI_SSID_MAX_LEN);
-	status->ssid_len = strnlen(data->status.ssid, WIFI_SSID_MAX_LEN);
-	status->ssid[status->ssid_len] = '\0';
+	/* Ensure the result is NUL terminated */
+	status->ssid[WIFI_SSID_MAX_LEN-1] = '\0';
+	/* We know it is NUL terminated, so we can use strlen */
+	status->ssid_len = strlen(data->status.ssid);
 	status->band = WIFI_FREQ_BAND_2_4_GHZ;
 	status->link_mode = WIFI_LINK_MODE_UNKNOWN;
 	status->mfp = WIFI_MFP_DISABLE;
@@ -905,7 +910,7 @@ static void esp32_wifi_init_ap(struct net_if *iface)
 #endif
 
 #if defined(CONFIG_NET_STATISTICS_WIFI)
-static int esp32_wifi_stats(const struct device *dev, struct net_stats_wifi *stats)
+static int esp32_wifi_get_stats(const struct device *dev, struct net_stats_wifi *stats)
 {
 	struct esp32_wifi_runtime *data = dev->data;
 
@@ -921,6 +926,15 @@ static int esp32_wifi_stats(const struct device *dev, struct net_stats_wifi *sta
 	stats->multicast.tx = data->stats.multicast.tx;
 	stats->sta_mgmt.beacons_rx = data->stats.sta_mgmt.beacons_rx;
 	stats->sta_mgmt.beacons_miss = data->stats.sta_mgmt.beacons_miss;
+
+	return 0;
+}
+
+static int esp32_wifi_reset_stats(const struct device *dev)
+{
+	struct esp32_wifi_runtime *data = dev->data;
+
+	memset(&data->stats, 0, sizeof(data->stats));
 
 	return 0;
 }
@@ -952,20 +966,51 @@ static int esp32_wifi_dev_init(const struct device *dev)
 	return 0;
 }
 
+static int esp32_wifi_set_config(const struct device *dev, enum ethernet_config_type type,
+				 const struct ethernet_config *config)
+{
+	struct esp32_wifi_runtime *dev_data = dev->data;
+
+	if (type == ETHERNET_CONFIG_TYPE_MAC_ADDRESS) {
+		esp_err_t ret = esp_wifi_set_mode(ESP32_WIFI_MODE_STA);
+
+		if (ret != ESP_OK) {
+			LOG_ERR("Failed to set WiFi mode: %d", ret);
+			return -EIO;
+		}
+
+		ret = esp_wifi_set_mac(WIFI_IF_STA, config->mac_address.addr);
+		if (ret != ESP_OK) {
+			LOG_ERR("Failed to set MAC address: %d", ret);
+			return -EIO;
+		}
+
+		memcpy(dev_data->mac_addr, config->mac_address.addr, sizeof(dev_data->mac_addr));
+		net_if_set_link_addr(esp32_wifi_iface, dev_data->mac_addr,
+				     sizeof(dev_data->mac_addr), NET_LINK_ETHERNET);
+
+		return 0;
+	}
+
+	return -ENOTSUP;
+}
+
 static const struct wifi_mgmt_ops esp32_wifi_mgmt = {
-	.scan		   = esp32_wifi_scan,
-	.connect	   = esp32_wifi_connect,
-	.disconnect	   = esp32_wifi_disconnect,
-	.ap_enable	   = esp32_wifi_ap_enable,
-	.ap_disable	   = esp32_wifi_ap_disable,
-	.iface_status	   = esp32_wifi_status,
+	.scan = esp32_wifi_scan,
+	.connect = esp32_wifi_connect,
+	.disconnect = esp32_wifi_disconnect,
+	.ap_enable = esp32_wifi_ap_enable,
+	.ap_disable = esp32_wifi_ap_disable,
+	.iface_status = esp32_wifi_status,
 #if defined(CONFIG_NET_STATISTICS_WIFI)
-	.get_stats	   = esp32_wifi_stats,
+	.get_stats = esp32_wifi_get_stats,
+	.reset_stats = esp32_wifi_reset_stats,
 #endif
 };
 
 static const struct net_wifi_mgmt_offload esp32_api = {
-	.wifi_iface.iface_api.init	  = esp32_wifi_init,
+	.wifi_iface.iface_api.init = esp32_wifi_init,
+	.wifi_iface.set_config = esp32_wifi_set_config,
 	.wifi_iface.send = esp32_wifi_send,
 	.wifi_mgmt_api = &esp32_wifi_mgmt,
 };
@@ -991,6 +1036,8 @@ NET_DEVICE_DT_INST_DEFINE(1,
 		NET_L2_GET_CTX_TYPE(ETHERNET_L2), NET_ETH_MTU);
 
 DEFINE_WIFI_NM_INSTANCE(esp32_wifi_nm, &esp32_wifi_mgmt);
+#endif
 
+#if defined(CONFIG_NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT)
 CONNECTIVITY_WIFI_MGMT_BIND(Z_DEVICE_DT_DEV_ID(DT_DRV_INST(0)));
 #endif

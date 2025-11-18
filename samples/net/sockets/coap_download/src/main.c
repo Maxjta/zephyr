@@ -21,7 +21,7 @@ static int64_t start_time;
 /* This struct contains (potentially large) TX and RX buffers, so allocate statically */
 static struct coap_client client = {0};
 
-static void net_event_handler(uint32_t mgmt_event, struct net_if *iface, void *info,
+static void net_event_handler(uint64_t mgmt_event, struct net_if *iface, void *info,
 			      size_t info_length, void *user_data)
 {
 	if (NET_EVENT_L4_CONNECTED == mgmt_event) {
@@ -31,20 +31,20 @@ static void net_event_handler(uint32_t mgmt_event, struct net_if *iface, void *i
 
 NET_MGMT_REGISTER_EVENT_HANDLER(l4_conn_handler, NET_EVENT_L4_CONNECTED, net_event_handler, NULL);
 
-static void on_coap_response(int16_t result_code, size_t offset, const uint8_t *payload, size_t len,
-			     bool last_block, void *user_data)
+static void on_coap_response(const struct coap_client_response_data *data, void *user_data)
 {
-	LOG_INF("CoAP response, result_code=%d, offset=%u, len=%u", result_code, offset, len);
+	LOG_INF("CoAP response, result_code=%d, offset=%u, len=%u", data->result_code, data->offset,
+		data->payload_len);
 
-	if ((COAP_RESPONSE_CODE_CONTENT == result_code) && last_block) {
+	if ((COAP_RESPONSE_CODE_CONTENT == data->result_code) && data->last_block) {
 		int64_t elapsed_time = k_uptime_delta(&start_time);
-		size_t total_size = offset + len;
+		size_t total_size = data->offset + data->payload_len;
 
 		LOG_INF("CoAP download done, got %u bytes in %" PRId64 " ms", total_size,
 			elapsed_time);
 		k_sem_give(&coap_done_sem);
-	} else if (COAP_RESPONSE_CODE_CONTENT != result_code) {
-		LOG_ERR("Error during CoAP download, result_code=%d", result_code);
+	} else if (COAP_RESPONSE_CODE_CONTENT != data->result_code) {
+		LOG_ERR("Error during CoAP download, result_code=%d", data->result_code);
 		k_sem_give(&coap_done_sem);
 	}
 }
@@ -59,11 +59,12 @@ static void do_coap_download(struct sockaddr *sa)
 					      .payload = NULL,
 					      .len = 0,
 					      .cb = on_coap_response,
-					      .options = NULL,
+					      .options = { },
 					      .num_options = 0,
 					      .user_data = NULL};
 
-	LOG_INF("Starting CoAP download using %s", (AF_INET == sa->sa_family) ? "IPv4" : "IPv6");
+	LOG_INF("Starting CoAP download using %s",
+		(NET_AF_INET == sa->sa_family) ? "IPv4" : "IPv6");
 
 	sockfd = zsock_socket(sa->sa_family, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
@@ -105,9 +106,9 @@ int main(void)
 #if defined(CONFIG_NET_IPV4)
 	struct sockaddr_in *addr4 = (struct sockaddr_in *)&sa;
 
-	addr4->sin_family = AF_INET;
+	addr4->sin_family = NET_AF_INET;
 	addr4->sin_port = htons(CONFIG_NET_SAMPLE_COAP_SERVER_PORT);
-	zsock_inet_pton(AF_INET, CONFIG_NET_CONFIG_PEER_IPV4_ADDR, &addr4->sin_addr);
+	zsock_inet_pton(NET_AF_INET, CONFIG_NET_CONFIG_PEER_IPV4_ADDR, &addr4->sin_addr);
 
 	do_coap_download(&sa);
 #endif
@@ -115,9 +116,9 @@ int main(void)
 #if defined(CONFIG_NET_IPV6)
 	struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&sa;
 
-	addr6->sin6_family = AF_INET6;
+	addr6->sin6_family = NET_AF_INET6;
 	addr6->sin6_port = htons(CONFIG_NET_SAMPLE_COAP_SERVER_PORT);
-	zsock_inet_pton(AF_INET6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR, &addr6->sin6_addr);
+	zsock_inet_pton(NET_AF_INET6, CONFIG_NET_CONFIG_PEER_IPV6_ADDR, &addr6->sin6_addr);
 
 	do_coap_download(&sa);
 #endif

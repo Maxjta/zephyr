@@ -43,6 +43,14 @@ config MCUMGR_GRP_OS_RESET_HOOK
 	  and will allow the application to perform any required operations
 	  before accepting or declining the reset request.
 
+config MCUMGR_GRP_OS_RESET_BOOT_MODE
+	bool "Boot mode"
+	depends on RETENTION_BOOT_MODE
+	help
+	  Allows applications to set the boot mode using the retention boot mode module which
+	  allows for booting other images e.g. as part of a bootloader. This is done with an
+	  optional field in the reset command which specifies the value of the boot mode.
+
 endif
 
 config MCUMGR_GRP_OS_TASKSTAT
@@ -174,6 +182,14 @@ config MCUMGR_GRP_OS_INFO_MAX_RESPONSE_SIZE
 	  The maximum size of the response to the info command, will use a stack buffer of this
 	  size to store the data in. If the output response is too big then the output will not be
 	  present in the response, which will just contain the result code (rc) of memory error.
+
+config MCUMGR_GRP_OS_INFO_HARDWARE_INFO_SHORT_HARDWARE_PLATFORM
+	bool "Use short hardware platform (board name) [DEPRECATED]"
+	select DEPRECATED
+	help
+	  Will use the board name and board revision without the SoC or variant information if
+	  enabled which is the Zephyr 4.2 and earlier behaviour, otherwise will output the full
+	  board target for the hardware platform.
 
 config MCUMGR_GRP_OS_INFO_CUSTOM_HOOKS
 	bool "Custom info hooks"

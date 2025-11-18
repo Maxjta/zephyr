@@ -10,22 +10,26 @@ This Zephyr shield is tested with the following M.2 modules and hardware for Wi-
 
 - Embedded Artist 1XK module - uses Murata 1XK radio module with NXP IW416 chipset
 - Embedded Artist 2EL module - uses Murata 2EL radio module with NXP IW612 chipset
+- Embedded Artist 2LL module - uses Murata 2LL radio module with NXP IW610 chipset
 
 More information about supported chipsets, radio modules and M.2 modules can be found in below links,
 
 - `IW612 NXP Chipset <https://www.nxp.com/products/IW612>`_
 - `IW416 NXP Chipset <https://www.nxp.com/products/IW416>`_
+- `IW610 NXP Chipset <https://www.nxp.com/products/IW610>`_
 - `2EL Murata Radio Module <https://www.murata.com/en-us/products/connectivitymodule/wi-fi-bluetooth/overview/lineup/type2el>`_
 - `1XK Murata Radio Module  <https://www.murata.com/en-us/products/connectivitymodule/wi-fi-bluetooth/overview/lineup/type1xk>`_
+- `2LL Murata Radio Module <https://www.murata.com/en-us/products/connectivitymodule/wi-fi-bluetooth/overview/lineup/type2ll>`_
 - `1XK Embedded Artist Module <https://www.embeddedartists.com/products/1xk-m-2-module>`_
 - `2EL Embedded Artist Module <https://www.embeddedartists.com/products/2el-m-2-module>`_
+- `2LL Embedded Artist Module <https://www.embeddedartists.com/products/2ll-m-2-module>`_
 
 Requirements
 ************
 
 To use the shield, below requirements needs to be satisfied.
 
-- M.2 module with BT HCI UART and SDIO Interface with NXP IW416 or IW612 SoC support.
+- M.2 module with BT HCI UART and SDIO Interface with NXP IW416 or IW612 or IW610 SoC support.
 - Host platform shall have compatible M.2 interface slot.
 - For Coex (Wi-Fi + BT), UART driver that supports UART RTS line control to wakeup BT CPU from sleep.
 - To use default Bluetooth-Shell app it needs ~490KB flash & ~130KB RAM memory.
@@ -34,8 +38,9 @@ To use the shield, below requirements needs to be satisfied.
 Integration Platform
 ********************
 
-This shield is validated and tested for use with the host platform listed below. It can be used with
-other host platforms, but the functionality is not guaranteed.
+This shield is validated and tested for use with the host platform listed below.
+While the shield can be used with other host platforms, other combinations
+are not actively tested or validated.
 
 - :zephyr:board:`mimxrt1060_evk` Rev-C.
 
@@ -57,25 +62,43 @@ Below are the supported shields to be used with ``--shield <option>`` when you i
 
 - ``nxp_m2_1xk_wifi_bt``: For Wi-Fi/Bluetooth samples to work with NXP IW416 SoC
 - ``nxp_m2_2el_wifi_bt``: For Wi-Fi/Bluetooth samples to work with NXP IW612 SoC
+- ``nxp_m2_2ll_wifi_bt``: For Wi-Fi/Bluetooth samples to work with NXP IW610 SoC
 
 For example:
 
+BT:
+
 .. zephyr-app-commands::
-   :zephyr-app: samples/bluetooth/handsfree
+   :zephyr-app: samples/bluetooth/classic/handsfree
    :board: mimxrt1060_evk@C//qspi
    :shield: nxp_m2_1xk_wifi_bt
    :goals: build
+
+Wi-Fi Embedded supplicant:
+
+.. zephyr-app-commands::
+   :zephyr-app: samples/net/wifi/shell
+   :board: mimxrt1060_evk@C//qspi
+   :shield: nxp_m2_2ll_wifi_bt
+   :goals: build
+   :gen-args: -DEXTRA_CONF_FILE="nxp/overlay_hosted_mcu.conf"
+
+Wi-Fi HostAP/WPA supplicant:
 
 .. zephyr-app-commands::
    :zephyr-app: samples/net/wifi/shell
    :board: mimxrt1060_evk@C//qspi
    :shield: nxp_m2_2el_wifi_bt
    :goals: build
-   :gen-args: -DEXTRA_CONF_FILE="nxp/overlay_hosted_mcu.conf"
+   :gen-args: -DEXTRA_CONF_FILE="nxp/overlay_hosted_mcu.conf;nxp/overlay_hostap_hosted_mcu.conf"
 
 .. note::
-   To build Wi-Fi application, "nxp/overlay_hosted_mcu.conf" config file
+   To build Wi-Fi application, ``nxp/overlay_hosted_mcu.conf`` config file
    must be passed along with default conf file as mentioned in above build command.
+
+   To enable HostAP/WPA supplicant support, additional "nxp/overlay_hostap_hosted_mcu.conf" file
+   needs to be passed.
+   In above mentioned commands, shield parameter can be modified with respect to module selection.
 
 Hardware Rework to Enable M.2 Interfaces
 ****************************************

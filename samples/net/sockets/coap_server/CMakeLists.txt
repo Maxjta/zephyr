@@ -27,19 +27,18 @@ zephyr_linker_sources(DATA_SECTIONS sections-ram.ld)
 # Support CMake linker generator
 zephyr_iterable_section(
   NAME coap_resource_coap_server
-  GROUP DATA_REGION ${XIP_ALIGN_WITH_INPUT}
-  SUBALIGN ${CONFIG_LINKER_ITERABLE_SUBALIGN})
+  GROUP DATA_REGION ${XIP_ALIGN_WITH_INPUT})
 
 include(${ZEPHYR_BASE}/samples/net/common/common.cmake)
 
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
 
 foreach(inc_file
-	ca.der
-	server.der
-	server_privkey.der
-	coaps-server-cert.der
-	coaps-server-key.der
+  ca.der
+  server.der
+  server_privkey.der
+  coaps-server-cert.der
+  coaps-server-key.der
 )
   generate_inc_file_for_target(
     app

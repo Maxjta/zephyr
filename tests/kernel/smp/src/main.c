@@ -14,12 +14,22 @@
 #error SMP test requires at least two CPUs!
 #endif
 
+/*
+ * The test is designed to work with no more than 12 CPUs.
+ * If attempting to run on a platform with more than that,
+ * create a custom board overlay file to reduce the number
+ * of CPUs to 12.
+ */
+#if CONFIG_MP_MAX_NUM_CPUS > 12
+#error "Test only supports up to 12 CPUs\nReduce CONFIG_MP_MAX_NUM_CPUS\n"
+#endif
+
 #define RUN_FACTOR (CONFIG_SMP_TEST_RUN_FACTOR / 100.0)
 
 #define T2_STACK_SIZE (2048 + CONFIG_TEST_EXTRA_STACK_SIZE)
 #define STACK_SIZE (384 + CONFIG_TEST_EXTRA_STACK_SIZE)
 #define DELAY_US 50000
-#define TIMEOUT 1000
+#define TIMEOUT 5000
 #define EQUAL_PRIORITY 1
 #define TIME_SLICE_MS 500
 #define THREAD_DELAY 1
@@ -372,11 +382,11 @@ ZTEST(smp, test_coop_resched_threads)
 	 * since we don't give up current CPU, last thread
 	 * will not get scheduled
 	 */
-	spawn_threads(K_PRIO_COOP(10), num_threads, !EQUAL_PRIORITY,
+	spawn_threads(K_PRIO_COOP(12), num_threads, !EQUAL_PRIORITY,
 		      &thread_entry_fn, THREAD_DELAY);
 
 	/* Wait for some time to let other core's thread run */
-	k_busy_wait(DELAY_US);
+	k_busy_wait(DELAY_US * 5);
 
 
 	/* Reassure that cooperative thread's are not preempted
@@ -413,7 +423,7 @@ ZTEST(smp, test_preempt_resched_threads)
 	 * lower priority thread should
 	 * be preempted by higher ones
 	 */
-	spawn_threads(K_PRIO_PREEMPT(10), num_threads, !EQUAL_PRIORITY,
+	spawn_threads(K_PRIO_PREEMPT(12), num_threads, !EQUAL_PRIORITY,
 		      &thread_entry_fn, THREAD_DELAY);
 
 	spin_for_threads_exit();
@@ -446,11 +456,11 @@ ZTEST(smp, test_yield_threads)
 	 * of cores, so the last thread would be
 	 * pending.
 	 */
-	spawn_threads(K_PRIO_COOP(10), num_threads, !EQUAL_PRIORITY,
+	spawn_threads(K_PRIO_COOP(12), num_threads, !EQUAL_PRIORITY,
 		      &thread_entry_fn, !THREAD_DELAY);
 
 	k_yield();
-	k_busy_wait(DELAY_US);
+	k_busy_wait(DELAY_US * 5);
 
 	for (int i = 0; i < num_threads; i++) {
 		zassert_true(tinfo[i].executed == 1,
@@ -475,7 +485,7 @@ ZTEST(smp, test_sleep_threads)
 {
 	unsigned int num_threads = arch_num_cpus();
 
-	spawn_threads(K_PRIO_COOP(10), num_threads, !EQUAL_PRIORITY,
+	spawn_threads(K_PRIO_COOP(12), num_threads, !EQUAL_PRIORITY,
 		      &thread_entry_fn, !THREAD_DELAY);
 
 	k_msleep(TIMEOUT);
@@ -533,7 +543,7 @@ static void check_wokeup_threads(int tnum)
 	/* k_wakeup() isn't synchronous, give the other CPU time to
 	 * schedule them
 	 */
-	k_busy_wait(200000);
+	k_busy_wait(300000);
 
 	for (i = 0; i < tnum; i++) {
 		if (tinfo[i].executed == 1 && threads_woke_up <= tnum) {
@@ -558,7 +568,7 @@ ZTEST(smp, test_wakeup_threads)
 	unsigned int num_threads = arch_num_cpus();
 
 	/* Spawn threads to run on all remaining cores */
-	spawn_threads(K_PRIO_COOP(10), num_threads - 1, !EQUAL_PRIORITY,
+	spawn_threads(K_PRIO_COOP(12), num_threads - 1, !EQUAL_PRIORITY,
 		      &thread_wakeup_entry, !THREAD_DELAY);
 
 	/* Check if all the threads have started, then call wakeup */
@@ -735,10 +745,10 @@ ZTEST(smp, test_smp_ipi)
 #ifndef CONFIG_TRACE_SCHED_IPI
 	ztest_test_skip();
 #else
+	TC_PRINT("There are %u CPUs.\n", arch_num_cpus());
 
-	TC_PRINT("cpu num=%d", arch_num_cpus());
-
-	for (int i = 0; i < 3 ; i++) {
+	for (int i = 0; i < CONFIG_SMP_IPI_NUM_ITERS; i++) {
+		int retries = CONFIG_SMP_IPI_WAIT_RETRIES;
 		/* issue a sched ipi to tell other CPU to run thread */
 		sched_ipi_has_called = 0;
 		arch_sched_broadcast_ipi();
@@ -747,11 +757,20 @@ ZTEST(smp, test_smp_ipi)
 		 * systems need to wait for host scheduling to run the
 		 * other CPU's thread.
 		 */
-		k_msleep(100);
+		while (retries > 0) {
+			k_msleep(CONFIG_SMP_IPI_WAIT_MS);
+
+			/* Bail out early if test is deemed a success. */
+			if (sched_ipi_has_called > 0) {
+				break;
+			}
+
+			retries--;
+		}
 
 		/**TESTPOINT: check if enter our IPI interrupt handler */
 		zassert_true(sched_ipi_has_called != 0,
-				"did not receive IPI.(%d)",
+				"did not receive IPI.(%d,%d)", i,
 				sched_ipi_has_called);
 	}
 #endif
@@ -1093,7 +1112,7 @@ ZTEST(smp, test_inc_concurrency)
 }
 
 /**
- * @brief Torture test for context switching code
+ * @brief Stress test for context switching code
  *
  * @ingroup kernel_smp_tests
  *
@@ -1132,13 +1151,13 @@ static void signal_raise(void *arg0, void *arg1, void *arg2)
 	}
 }
 
-ZTEST(smp, test_smp_switch_torture)
+ZTEST(smp_stress, test_smp_switch_stress)
 {
 	unsigned int num_threads = arch_num_cpus();
 
 	if (CONFIG_SMP_TEST_RUN_FACTOR == 0) {
 		/* If CONFIG_SMP_TEST_RUN_FACTOR is zero,
-		 * the switch torture test is effectively
+		 * the switch stress test is effectively
 		 * not doing anything as the k_sleep()
 		 * below is not going to sleep at all,
 		 * and all created threads are being
@@ -1174,7 +1193,7 @@ ZTEST(smp, test_smp_switch_torture)
 }
 
 /**
- * @brief Torture test for cpu affinity code
+ * @brief Stress test for cpu affinity code
  *
  * @ingroup kernel_smp_tests
  *
@@ -1229,3 +1248,4 @@ static void *smp_tests_setup(void)
 }
 
 ZTEST_SUITE(smp, NULL, smp_tests_setup, NULL, NULL, NULL);
+ZTEST_SUITE(smp_stress, NULL, smp_tests_setup, NULL, NULL, NULL);
