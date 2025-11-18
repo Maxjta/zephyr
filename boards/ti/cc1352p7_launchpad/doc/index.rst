@@ -98,6 +98,8 @@ aligns with the LaunchPad standard.
 Programming and Debugging
 *************************
 
+.. zephyr:board-supported-runners::
+
 Before flashing or debugging ensure the RESET, TMS, TCK, TDO, and TDI jumpers
 are in place. Also place jumpers on the TXD and RXD signals for a serial
 console using the XDS110 application serial port.
@@ -118,7 +120,7 @@ Prerequisites:
 #. Install OpenOCD
 
    Currently, OpenOCD doesn't support the CC1352P7.
-   Until its support get merged, we have to builld a downstream version that could found `here <https://github.com/anobli/openocd>`_.
+   Until its support get merged, we have to build a downstream version that could found `here <https://github.com/anobli/openocd>`_.
    Please refer to OpenOCD documentation to build and install OpenOCD.
 
    For your convenience, we provide a `prebuilt binary <https://github.com/anobli/openocd/actions/runs/10566225265>`_.

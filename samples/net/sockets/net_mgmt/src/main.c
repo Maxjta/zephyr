@@ -10,6 +10,7 @@ LOG_MODULE_REGISTER(net_mgmt_sock_sample, LOG_LEVEL_DBG);
 #include <zephyr/kernel.h>
 #include <errno.h>
 #include <stdio.h>
+#include <zephyr/posix/sys/socket.h>
 #include <zephyr/net/socket.h>
 #include <zephyr/net/socket_net_mgmt.h>
 #include <zephyr/net/net_if.h>
@@ -23,8 +24,12 @@ LOG_MODULE_REGISTER(net_mgmt_sock_sample, LOG_LEVEL_DBG);
 #endif
 
 /* A test thread that spits out events that we can catch and show to user */
-static void trigger_events(void)
+static void trigger_events(void *p1, void *p2, void *p3)
 {
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
 	int operation = 0;
 	struct net_if_addr *ifaddr_v6;
 	struct net_if *iface;
@@ -141,19 +146,19 @@ static void listener(void *p1, void *p2, void *p3)
 			printk("DAD succeed for interface %d (%s)\n",
 			       event_addr.nm_ifindex,
 			       get_ip_addr(ipaddr, sizeof(ipaddr),
-					   AF_INET6, hdr));
+					   NET_AF_INET6, hdr));
 			break;
 		case NET_EVENT_IPV6_ADDR_ADD:
 			printk("IPv6 address added to interface %d (%s)\n",
 			       event_addr.nm_ifindex,
 			       get_ip_addr(ipaddr, sizeof(ipaddr),
-					   AF_INET6, hdr));
+					   NET_AF_INET6, hdr));
 			break;
 		case NET_EVENT_IPV6_ADDR_DEL:
 			printk("IPv6 address removed from interface %d (%s)\n",
 			       event_addr.nm_ifindex,
 			       get_ip_addr(ipaddr, sizeof(ipaddr),
-					   AF_INET6, hdr));
+					   NET_AF_INET6, hdr));
 			break;
 		}
 	}

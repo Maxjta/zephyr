@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/devicetree.h>
-#if DT_HAS_COMPAT_STATUS_OKAY(zephyr_native_posix_counter)
-#define DT_DRV_COMPAT zephyr_native_posix_counter
-#warning "zephyr,native-posix-counter is deprecated in favor of zephyr,native-sim-counter"
-#else
 #define DT_DRV_COMPAT zephyr_native_sim_counter
-#endif
 
 #include <string.h>
 #include <zephyr/device.h>
@@ -32,7 +26,7 @@ static struct counter_alarm_cfg pending_alarm[DRIVER_CONFIG_INFO_CHANNELS];
 static bool is_alarm_pending[DRIVER_CONFIG_INFO_CHANNELS];
 static struct counter_top_cfg top;
 static bool is_top_set;
-static const struct device *device;
+static const struct device *dev_p;
 
 static void schedule_next_isr(void)
 {
@@ -67,16 +61,14 @@ static void counter_isr(const void *arg)
 		if (is_alarm_pending[i] && (current_value == pending_alarm[i].ticks)) {
 			is_alarm_pending[i] = false;
 			if (pending_alarm[i].callback) {
-				pending_alarm[i].callback(device, i, current_value,
+				pending_alarm[i].callback(dev_p, i, current_value,
 							  pending_alarm[i].user_data);
 			}
 		}
 	}
 
-	if (is_top_set && (current_value == top.ticks)) {
-		if (top.callback) {
-			top.callback(device, top.user_data);
-		}
+	if (is_top_set && (current_value == top.ticks) && top.callback) {
+		top.callback(dev_p, top.user_data);
 	}
 
 	schedule_next_isr();
@@ -84,7 +76,7 @@ static void counter_isr(const void *arg)
 
 static int ctr_init(const struct device *dev)
 {
-	device = dev;
+	dev_p = dev;
 	memset(is_alarm_pending, 0, sizeof(is_alarm_pending));
 	is_top_set = false;
 	top.ticks = TOP_VALUE;
@@ -121,6 +113,14 @@ static int ctr_get_value(const struct device *dev, uint32_t *ticks)
 	ARG_UNUSED(dev);
 
 	*ticks = hw_counter_get_value();
+	return 0;
+}
+
+static int ctr_reset(const struct device *dev)
+{
+	ARG_UNUSED(dev);
+
+	hw_counter_reset();
 	return 0;
 }
 
@@ -237,6 +237,7 @@ static DEVICE_API(counter, ctr_api) = {
 	.start = ctr_start,
 	.stop = ctr_stop,
 	.get_value = ctr_get_value,
+	.reset = ctr_reset,
 	.set_alarm = ctr_set_alarm,
 	.cancel_alarm = ctr_cancel_alarm,
 	.set_top_value = ctr_set_top_value,

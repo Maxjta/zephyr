@@ -39,10 +39,10 @@ struct fd_entry {
 #if defined(CONFIG_POSIX_DEVICE_IO)
 static const struct fd_op_vtable stdinout_fd_op_vtable;
 
-BUILD_ASSERT(CONFIG_ZVFS_OPEN_MAX >= 3, "CONFIG_ZVFS_OPEN_MAX >= 3 for CONFIG_POSIX_DEVICE_IO");
+BUILD_ASSERT(ZVFS_OPEN_SIZE >= 3, "ZVFS_OPEN_SIZE >= 3 for CONFIG_POSIX_DEVICE_IO");
 #endif /* defined(CONFIG_POSIX_DEVICE_IO) */
 
-static struct fd_entry fdtable[CONFIG_ZVFS_OPEN_MAX] = {
+static struct fd_entry fdtable[ZVFS_OPEN_SIZE] = {
 #if defined(CONFIG_POSIX_DEVICE_IO)
 	/*
 	 * Predefine entries for stdin/stdout/stderr.
@@ -550,9 +550,7 @@ static ssize_t stdinout_read_vmeth(void *obj, void *buffer, size_t count)
 
 static ssize_t stdinout_write_vmeth(void *obj, const void *buffer, size_t count)
 {
-#if defined(CONFIG_BOARD_NATIVE_POSIX)
-	return zvfs_write(1, buffer, count, NULL);
-#elif defined(CONFIG_NEWLIB_LIBC) || defined(CONFIG_ARCMWDT_LIBC)
+#if defined(CONFIG_NEWLIB_LIBC) || defined(CONFIG_ARCMWDT_LIBC)
 	return z_impl_zephyr_write_stdout(buffer, count);
 #else
 	return 0;

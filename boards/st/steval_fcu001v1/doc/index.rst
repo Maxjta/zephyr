@@ -27,7 +27,7 @@ STM32 Flight Controller Unit provides the following hardware components:
 - 2 User LEDS
 - USART/UART (1)
 - I2C (1)
-- Bluetooth LE over SPI
+- Bluetooth |reg| Low Energy over SPI
 
 More information about the STM32 Flight Controller Unit
 can be found in these documents:
@@ -73,6 +73,8 @@ The steval_fcu001v1 board has one I2C. The default I2C mapping for Zephyr is:
 
 Programming and Debugging
 *************************
+
+.. zephyr:board-supported-runners::
 
 Applications for the ``steval_fcu001v1`` board configuration can be built and
 flashed in the usual way (see :ref:`build_an_application` and

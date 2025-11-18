@@ -20,6 +20,7 @@
 
 &zephyr_mipi_dsi {
 	status = "okay";
+
 	otm8009a: otm8009a@0 {
 		status = "okay";
 		compatible = "orisetech,otm8009a";
@@ -39,6 +40,7 @@
 	width = <800>;
 	height = <480>;
 	pixel-format = <PANEL_PIXEL_FORMAT_RGB_888>;
+
 	/* orisetech, otm8009a */
 	display-timings {
 		compatible = "zephyr,panel-timing";
@@ -59,7 +61,7 @@
 	ft5336: ft5336@38 {
 		compatible = "focaltech,ft5336";
 		reg = <0x38>;
-		int-gpios = <&dsi_lcd_qsh_030 4 0>;
+		int-gpios = <&dsi_lcd_qsh_030 4 GPIO_ACTIVE_LOW>;
 		status = "okay";
 	};
 };

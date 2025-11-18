@@ -30,7 +30,6 @@ except ImportError:
     print("Install tabulate python module with pip to use --device-testing option.")
 
 logger = logging.getLogger('twister')
-logger.setLevel(logging.DEBUG)
 
 
 class DUT:
@@ -148,6 +147,7 @@ class HardwareMap:
         'Microsoft',
         'Nuvoton',
         'Espressif',
+        'SecuringHardware.com',
     ]
 
     runner_mapping = {
@@ -160,7 +160,7 @@ class HardwareMap:
             'J-Link OB'
         ],
         'openocd': [
-            'STM32 STLink', '^XDS110.*', 'STLINK-V3'
+            'STM32 STLink', '^XDS110.*', 'STLINK-V3', '^Tigard.*'
         ],
         'dediprog': [
             'TTL232R-3V3',
@@ -170,7 +170,7 @@ class HardwareMap:
 
     def __init__(self, env=None):
         self.detected = []
-        self.duts = []
+        self.duts: list[DUT] = []
         self.options = env.options
 
     def discover(self):
@@ -196,7 +196,7 @@ class HardwareMap:
                             self.options.platform.append(d.platform)
 
             elif self.options.device_serial:
-                self.add_device(self.options.device_serial,
+                self.add_device(self.options.device_serial[0],
                                 self.options.platform[0],
                                 self.options.pre_script,
                                 False,
@@ -205,6 +205,12 @@ class HardwareMap:
                                 flash_with_test=self.options.device_flash_with_test,
                                 flash_before=self.options.flash_before,
                                 )
+                if len(self.options.device_serial) > 1:
+                    for serial in self.options.device_serial[1:]:
+                        self.add_device(serial,
+                                        platform=None,
+                                        pre_script=None,
+                                        is_pty=False)
 
             elif self.options.device_serial_pty:
                 self.add_device(self.options.device_serial_pty,
@@ -213,7 +219,7 @@ class HardwareMap:
                                 True,
                                 flash_timeout=self.options.device_flash_timeout,
                                 flash_with_test=self.options.device_flash_with_test,
-                                flash_before=False,
+                                flash_before=self.options.flash_before,
                                 )
 
             # the fixtures given by twister command explicitly should be assigned to each DUT
@@ -276,7 +282,7 @@ class HardwareMap:
             serial_pty = dut.get('serial_pty')
             flash_before = dut.get('flash_before')
             if flash_before is None:
-                flash_before = self.options.flash_before and (not (flash_with_test or serial_pty))
+                flash_before = self.options.flash_before and (not flash_with_test)
             platform = dut.get('platform')
             if isinstance(platform, str):
                 platforms = platform.split()
@@ -356,6 +362,11 @@ class HardwareMap:
                 if d.manufacturer == 'Texas Instruments' and not d.location.endswith('0'):
                     continue
 
+                # The Tigard multi-protocol debug tool provides multiple serial devices.
+                # Assume endpoint 0 is the UART, skip all others.
+                if d.manufacturer == 'SecuringHardware.com' and not d.location.endswith('0'):
+                    continue
+
                 if d.product is None:
                     d.product = 'unknown'
 
@@ -383,6 +394,9 @@ class HardwareMap:
                 logger.warning(f"Unsupported device ({d.manufacturer}): {d}")
 
     def save(self, hwm_file):
+        # list of board ids with boot-serial sequence
+        boot_ids = []
+
         # use existing map
         self.detected = natsorted(self.detected, key=lambda x: x.serial or '')
         if os.path.exists(hwm_file):
@@ -391,10 +405,13 @@ class HardwareMap:
                 if hwm:
                     hwm.sort(key=lambda x: x.get('id', ''))
 
-                    # disconnect everything
+                    # disconnect everything except boards with boot-serial sequence
                     for h in hwm:
-                        h['connected'] = False
-                        h['serial'] = None
+                        if h['product'] != 'BOOT-SERIAL' :
+                            h['connected'] = False
+                            h['serial'] = None
+                        else :
+                            boot_ids.append(h['id'])
 
                     for _detected in self.detected:
                         for h in hwm:
@@ -418,6 +435,11 @@ class HardwareMap:
                     hwm = hwm + new
                 else:
                     hwm = new
+
+            #remove duplicated devices with unknown platform names before saving the file
+            for h in hwm :
+                if h['id'] in boot_ids and h['platform'] == 'unknown':
+                    hwm.remove(h)
 
             with open(hwm_file, 'w') as yaml_file:
                 yaml.dump(hwm, yaml_file, Dumper=Dumper, default_flow_style=False)

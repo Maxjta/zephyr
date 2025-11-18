@@ -141,8 +141,7 @@ Hints:
   endif()
 endforeach()
 
-if((HWMv1 AND NOT EXISTS ${BOARD_DIR}/${BOARD}_defconfig)
-   OR (HWMv2 AND NOT EXISTS ${BOARD_DIR}/board.yml))
+if(NOT EXISTS ${BOARD_DIR}/board.yml)
   message(WARNING "BOARD_DIR: ${BOARD_DIR} has been moved or deleted. "
                   "Trying to find new location."
   )
@@ -181,7 +180,7 @@ if(NOT BOARD_DIR)
   endif()
 endif()
 
-set(format_str "{NAME}\;{DIR}\;{HWM}\;")
+set(format_str "{NAME}\;{DIR}\;")
 set(format_str "${format_str}{REVISION_FORMAT}\;{REVISION_DEFAULT}\;{REVISION_EXACT}\;")
 set(format_str "${format_str}{REVISIONS}\;{SOCS}\;{QUALIFIERS}")
 
@@ -198,7 +197,7 @@ endif()
 
 if(NOT "${ret_board}" STREQUAL "")
   string(STRIP "${ret_board}" ret_board)
-  set(single_val "NAME;HWM;REVISION_FORMAT;REVISION_DEFAULT;REVISION_EXACT")
+  set(single_val "NAME;REVISION_FORMAT;REVISION_DEFAULT;REVISION_EXACT")
   set(multi_val  "DIR;REVISIONS;SOCS;QUALIFIERS")
   cmake_parse_arguments(LIST_BOARD "" "${single_val}" "${multi_val}" ${ret_board})
   list(GET LIST_BOARD_DIR 0 BOARD_DIR)
@@ -209,30 +208,21 @@ if(NOT "${ret_board}" STREQUAL "")
   endforeach()
 
   # Create two CMake variables identifying the hw model.
-  # CMake variable: HWM=[v1,v2]
-  # CMake variable: HWMv1=True, when HWMv1 is in use.
-  # CMake variable: HWMv2=True, when HWMv2 is in use.
-  set(HWM       ${LIST_BOARD_HWM} CACHE INTERNAL "Zephyr hardware model version")
-  set(HWM${HWM} True   CACHE INTERNAL "Zephyr hardware model")
+  # CMake variable: HWM=v2
+  # CMake variable: HWMv2=True
+  set(HWM v2 CACHE INTERNAL "Zephyr hardware model version")
+  set(HWMv2 True CACHE INTERNAL "Zephyr hardware model")
 elseif(BOARD_DIR)
   message(FATAL_ERROR "Error finding board: ${BOARD} in ${BOARD_DIR}.\n"
           "This indicates the board has been removed, renamed, or placed at a new location.\n"
-	  "Please run a pristine build."
+          "Please run a pristine build."
   )
 else()
-  message("No board named '${BOARD}' found.\n\n"
-          "Please choose one of the following boards:\n"
-  )
-  execute_process(${list_boards_commands})
+  message("No board named '${BOARD}' found. Did you mean:\n")
+  execute_process(${list_boards_commands} --fuzzy-match ${BOARD})
+  message("\nRun 'west boards' for the full list.")
   unset(CACHED_BOARD CACHE)
   message(FATAL_ERROR "Invalid BOARD; see above.")
-endif()
-
-if(HWMv1 AND DEFINED BOARD_QUALIFIERS)
-  message(FATAL_ERROR
-          "Board '${BOARD}' does not support board qualifiers, ${BOARD}${BOARD_QUALIFIERS}.\n"
-          "Please specify board without qualifiers.\n"
-  )
 endif()
 
 cmake_path(IS_PREFIX ZEPHYR_BASE "${BOARD_DIR}" NORMALIZE in_zephyr_tree)
@@ -240,74 +230,62 @@ if(NOT in_zephyr_tree)
   set(USING_OUT_OF_TREE_BOARD 1)
 endif()
 
-if(HWMv1)
-  if(EXISTS ${BOARD_DIR}/revision.cmake)
-    # Board provides revision handling.
+if(LIST_BOARD_REVISION_FORMAT)
+  if(LIST_BOARD_REVISION_FORMAT STREQUAL "custom")
     include(${BOARD_DIR}/revision.cmake)
-  elseif(BOARD_REVISION)
-    message(WARNING "Board revision ${BOARD_REVISION} specified for ${BOARD}, \
-                     but board has no revision so revision will be ignored.")
-  endif()
-elseif(HWMv2)
-  if(LIST_BOARD_REVISION_FORMAT)
-    if(LIST_BOARD_REVISION_FORMAT STREQUAL "custom")
-      include(${BOARD_DIR}/revision.cmake)
-    else()
-      if(EXISTS ${BOARD_DIR}/revision.cmake)
-        message(WARNING
-          "revision.cmake ignored, revision.cmake is only used for revision format: 'custom'"
-        )
-      endif()
-
-      string(TOUPPER "${LIST_BOARD_REVISION_FORMAT}" rev_format)
-      if(LIST_BOARD_REVISION_EXACT)
-        set(rev_exact EXACT)
-      endif()
-
-      board_check_revision(
-        FORMAT ${rev_format}
-        DEFAULT_REVISION ${LIST_BOARD_REVISION_DEFAULT}
-        VALID_REVISIONS ${LIST_BOARD_REVISIONS}
-        ${rev_exact}
-      )
-    endif()
-  elseif(DEFINED BOARD_REVISION)
+  else()
     if(EXISTS ${BOARD_DIR}/revision.cmake)
       message(WARNING
-        "revision.cmake is not used, revisions must be defined in '${BOARD_DIR}/board.yml'"
+        "revision.cmake ignored, revision.cmake is only used for revision format: 'custom'"
       )
     endif()
 
-    message(FATAL_ERROR "Invalid board revision: ${BOARD_REVISION}\n"
-                        "Board '${BOARD}' does not define any revisions."
+    string(TOUPPER "${LIST_BOARD_REVISION_FORMAT}" rev_format)
+    if(LIST_BOARD_REVISION_EXACT)
+      set(rev_exact EXACT)
+    endif()
+
+    board_check_revision(
+      FORMAT ${rev_format}
+      DEFAULT_REVISION ${LIST_BOARD_REVISION_DEFAULT}
+      VALID_REVISIONS ${LIST_BOARD_REVISIONS}
+      ${rev_exact}
+    )
+  endif()
+elseif(DEFINED BOARD_REVISION)
+  if(EXISTS ${BOARD_DIR}/revision.cmake)
+    message(WARNING
+      "revision.cmake is not used, revisions must be defined in '${BOARD_DIR}/board.yml'"
     )
   endif()
 
-  if(LIST_BOARD_QUALIFIERS)
-    # Allow users to omit the SoC when building for a board with a single SoC.
-    list(LENGTH LIST_BOARD_SOCS socs_length)
-    if(socs_length EQUAL 1)
-      set(BOARD_SINGLE_SOC TRUE)
-      set(BOARD_${BOARD}_SINGLE_SOC TRUE)
-      if(NOT DEFINED BOARD_QUALIFIERS)
-        set(BOARD_QUALIFIERS "/${LIST_BOARD_SOCS}")
-      elseif("${BOARD_QUALIFIERS}" MATCHES "^//.*")
-        string(REGEX REPLACE "^//" "/${LIST_BOARD_SOCS}/" BOARD_QUALIFIERS "${BOARD_QUALIFIERS}")
-      endif()
-    endif()
+  message(FATAL_ERROR "Invalid board revision: ${BOARD_REVISION}\n"
+                      "Board '${BOARD}' does not define any revisions."
+  )
+endif()
 
-    set(board_targets ${LIST_BOARD_QUALIFIERS})
-    list(TRANSFORM board_targets PREPEND "${BOARD}/")
-    if(NOT ("${BOARD}${BOARD_QUALIFIERS}" IN_LIST board_targets))
-      string(REPLACE ";" "\n" board_targets "${board_targets}")
-      unset(CACHED_BOARD CACHE)
-      message(FATAL_ERROR "Board qualifiers `${BOARD_QUALIFIERS}` for board \
-            `${BOARD}` not found. Please specify a valid board target.\n"
-            "Valid board targets for ${LIST_BOARD_NAME} are:\n${board_targets}\n")
+if(LIST_BOARD_QUALIFIERS)
+  # Allow users to omit the SoC when building for a board with a single SoC.
+  list(LENGTH LIST_BOARD_SOCS socs_length)
+  if(socs_length EQUAL 1)
+    set(BOARD_SINGLE_SOC TRUE)
+    set(BOARD_${BOARD}_SINGLE_SOC TRUE)
+    if(NOT DEFINED BOARD_QUALIFIERS)
+      set(BOARD_QUALIFIERS "/${LIST_BOARD_SOCS}")
+    elseif("${BOARD_QUALIFIERS}" MATCHES "^//.*")
+      string(REGEX REPLACE "^//" "/${LIST_BOARD_SOCS}/" BOARD_QUALIFIERS "${BOARD_QUALIFIERS}")
     endif()
   endif()
-else()
-  message(FATAL_ERROR "Unknown hw model (${HWM}) for board: ${BOARD}.")
+
+  set(board_targets ${LIST_BOARD_QUALIFIERS})
+  list(TRANSFORM board_targets PREPEND "${BOARD}/")
+  if(NOT ("${BOARD}${BOARD_QUALIFIERS}" IN_LIST board_targets))
+    string(REPLACE ";" "\n" board_targets "${board_targets}")
+    unset(CACHED_BOARD CACHE)
+    message(FATAL_ERROR "Board qualifiers `${BOARD_QUALIFIERS}` for board \
+          `${BOARD}` not found. Please specify a valid board target.\n"
+          "Valid board targets for ${LIST_BOARD_NAME} are:\n${board_targets}\n")
+  endif()
 endif()
 
 set(board_message "Board: ${BOARD}")

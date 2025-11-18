@@ -33,7 +33,7 @@ Hardware
 ********
 
 The STM32L552xx devices are an ultra-low-power microcontrollers family (STM32L5
-Series) based on the high-performance Arm|reg| Cortex|reg|-M33 32-bit RISC core.
+Series) based on the high-performance Arm |reg| Cortex |reg|-M33 32-bit RISC core.
 They operate at a frequency of up to 110 MHz.
 
 - Ultra-low-power with FlexPowerControl (down to 108 nA Standby mode and 62 uA/MHz run mode)
@@ -226,6 +226,8 @@ UART2. Default settings are 115200 8N1.
 
 Programming and Debugging
 *************************
+
+.. zephyr:board-supported-runners::
 
 Nucleo L552ZE Q board includes an ST-LINK/V2-1 embedded debug tool interface.
 

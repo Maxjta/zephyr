@@ -108,10 +108,10 @@ Supported Features
 
 .. zephyr:board-supported-hw::
 
-Bluetooth and compatibility with STM32WB Copro Wireless Binaries
-================================================================
+Bluetooth |reg| and compatibility with STM32WB Copro Wireless Binaries
+======================================================================
 
-To operate bluetooth on STM32WB5MMG, Cortex-M0 core should be flashed with
+To operate Bluetooth |reg| on STM32WB5MMG, Cortex-M0 core should be flashed with
 a valid STM32WB Coprocessor binaries (either 'Full stack' or 'HCI Layer').
 These binaries are delivered in STM32WB Cube packages, under
 ``Projects/STM32WB_Copro_Wireless_Binaries/STM32WB5x/``.
@@ -165,6 +165,8 @@ and the second to PC13. They have the aliases sw0 and sw1 respectively.
 
 Programming and Debugging
 *************************
+
+.. zephyr:board-supported-runners::
 
 STM32WB5MM-DK has an on-board ST-Link to flash and debug the firmware on the module.
 

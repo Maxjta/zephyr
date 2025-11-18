@@ -25,13 +25,13 @@ board:
 
 - Three users LEDs
 - Two push-buttons: USER and RESET
-- USB Type-C |trade| Sink device FS
+- USB Type-C |reg| Sink device FS
 
 Hardware
 ********
 
 The STM32U575xx devices are an ultra-low-power microcontrollers family (STM32U5
-Series) based on the high-performance Arm|reg| Cortex|reg|-M33 32-bit RISC core.
+Series) based on the high-performance Arm |reg| Cortex |reg|-M33 32-bit RISC core.
 They operate at a frequency of up to 160 MHz.
 
 - Ultra-low-power with FlexPowerControl (down to 300 nA Standby mode and 19.5 uA/MHz run mode)
@@ -197,6 +197,8 @@ do it by removing ``SB50`` jumper on the back side of the board.
 
 Programming and Debugging
 *************************
+
+.. zephyr:board-supported-runners::
 
 Nucleo U575ZI-Q board includes an ST-LINK/V3 embedded debug tool interface.
 This probe allows to flash the board using various tools.

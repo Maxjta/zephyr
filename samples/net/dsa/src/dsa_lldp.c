@@ -8,6 +8,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <zephyr/posix/netinet/in.h>
+#include <zephyr/posix/sys/socket.h>
+#include <zephyr/posix/arpa/inet.h>
+#include <zephyr/posix/unistd.h>
+
 #include <zephyr/net/socket.h>
 #include <zephyr/net/net_core.h>
 #include <zephyr/net/net_l2.h>
@@ -36,11 +41,12 @@ static const uint8_t eth_filter_l2_addr_base[][6] = {
 enum net_verdict dsa_ll_addr_switch_cb(struct net_if *iface, struct net_pkt *pkt)
 {
 	struct net_eth_hdr *hdr = NET_ETH_HDR(pkt);
-	struct net_linkaddr lladst;
+	struct net_linkaddr lladst = { 0 };
 
 	net_pkt_cursor_init(pkt);
-	lladst.len = sizeof(hdr->dst.addr);
-	lladst.addr = &hdr->dst.addr[0];
+
+	(void)net_linkaddr_set(&lladst, (const uint8_t *)hdr->dst.addr,
+			       sizeof(hdr->dst.addr));
 
 	/*
 	 * Pass packet to lan1..3 when matching one from
@@ -53,7 +59,7 @@ enum net_verdict dsa_ll_addr_switch_cb(struct net_if *iface, struct net_pkt *pkt
 	return NET_OK;
 }
 
-int start_slave_port_packet_socket(struct net_if *iface, struct instance_data *pd)
+int start_user_port_packet_socket(struct net_if *iface, struct instance_data *pd)
 {
 	struct sockaddr_ll dst;
 	int ret;
@@ -82,7 +88,7 @@ void dsa_lldp(struct ud *user_data)
 
 	/*
 	 * Set static table to forward LLDP protocol packets
-	 * to master port.
+	 * to conduit port.
 	 */
 	dsa_switch_set_mac_table_entry(user_data->lan[0], &eth_filter_l2_addr_base[0][0], BIT(4), 0,
 				       0);
